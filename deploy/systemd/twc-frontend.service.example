@@ -1,0 +1,18 @@
+[Unit]
+Description=TWC Angular SSR frontend
+After=network.target
+
+[Service]
+Type=simple
+User=twc
+Group=twc
+WorkingDirectory=/opt/twc/frontend
+Environment=NODE_ENV=production
+Environment=PORT=4000
+EnvironmentFile=-/etc/twc/frontend.env
+ExecStart=/usr/bin/node /opt/twc/frontend/dist/twc/server/server.mjs
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
