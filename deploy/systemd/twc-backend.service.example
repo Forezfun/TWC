@@ -1,0 +1,17 @@
+[Unit]
+Description=TWC FastAPI backend
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=twc
+Group=twc
+WorkingDirectory=/opt/twc/backend
+EnvironmentFile=/etc/twc/backend.env
+ExecStartPre=/opt/twc/backend/.venv/bin/alembic upgrade head
+ExecStart=/opt/twc/backend/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 3000 --workers 2
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
