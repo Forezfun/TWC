@@ -1,0 +1,14 @@
+# Только для локальной разработки: Postgres. Запуск: docker compose up -d
+services:
+  db:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: twc
+      POSTGRES_PASSWORD: twc
+      POSTGRES_DB: twc
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql
+volumes:
+  pgdata:

@@ -3,7 +3,7 @@
 Монорепозиторий проекта:
 
 - `frontend/` — Angular-приложение с SSR;
-- `backend/` — серверная часть проекта;
+- `backend/` — FastAPI + PostgreSQL, см. `backend/README.md`;
 - `deploy/` — примеры конфигурации для VPS;
 - `.github/workflows/` — CI-процессы GitHub Actions.
 
@@ -32,6 +32,14 @@ PORT=4000 npm run serve:ssr:twc
 ```
 
 После запуска frontend доступен на `http://127.0.0.1:4000`.
+
+## Backend
+
+Стек: Python 3.12, FastAPI, SQLAlchemy 2 (async), Alembic, PostgreSQL. Запуск,
+структура, модель данных и список эндпоинтов — в `backend/README.md`. Сервер
+слушает `127.0.0.1:3000`, все пути под `/api`, Swagger на `/api/docs`.
+Админка для сотрудников НКО — на сайте по адресу `/admin` (вход по почте и паролю,
+первого сотрудника создаёт `python -m app.create_admin`).
 
 ## CI frontend
 
@@ -78,6 +86,19 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now twc-frontend
 sudo systemctl status twc-frontend
 ```
+
+## Развёртывание backend на VPS
+
+```bash
+cd /opt/twc/backend
+uv sync --no-dev
+sudo cp ../deploy/systemd/twc-backend.service.example /etc/systemd/system/twc-backend.service
+sudo nano /etc/twc/backend.env    # DATABASE_URL, ADMIN_TOKEN, CORS_ORIGINS — см. backend/.env.example
+sudo systemctl daemon-reload
+sudo systemctl enable --now twc-backend
+```
+
+Миграции применяются автоматически при старте сервиса.
 
 Для внешнего доступа пример `deploy/nginx/twc.conf.example` направляет:
 
