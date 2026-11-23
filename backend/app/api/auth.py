@@ -18,6 +18,7 @@ async def login(payload: LoginIn, session: Session) -> LoginOut:
     if (
         user is None
         or not user.is_active
+        or user.is_archived
         or not verify_password(payload.password, user.password_hash)
     ):
         raise HTTPException(401, "Неверная почта или пароль")
@@ -39,8 +40,9 @@ async def change_password(payload: PasswordChange, admin: Admin, session: Sessio
 
 
 @router.get("/users", response_model=list[AdminOut])
-async def list_users(_: Admin, session: Session) -> list[AdminUser]:
-    return (await session.scalars(select(AdminUser).order_by(AdminUser.id))).all()
+async def list_users(_: Admin, session: Session, archived: bool = False) -> list[AdminUser]:
+    query = select(AdminUser).where(AdminUser.is_archived == archived).order_by(AdminUser.id)
+    return (await session.scalars(query)).all()
 
 
 @router.post("/users", response_model=AdminOut, status_code=201)
@@ -59,10 +61,26 @@ async def create_user(payload: AdminCreate, _: Admin, session: Session) -> Admin
 async def set_active(user_id: int, active: bool, admin: Admin, session: Session) -> AdminUser:
     if user_id == admin.id:
         raise HTTPException(400, "Нельзя отключить самого себя")
-    user = await session.get(AdminUser, user_id)
+    user = await session.get(AdminUser, user_id, with_for_update=True)
     if user is None:
         raise HTTPException(404, "Сотрудник не найден")
+    if user.is_archived:
+        raise HTTPException(409, "Сначала верните сотрудника из архива")
     user.is_active = active
     await session.commit()
     await session.refresh(user)
+    return user
+
+
+@router.patch("/users/{user_id}/archive", response_model=AdminOut)
+async def set_archived(user_id: int, archived: bool, admin: Admin, session: Session) -> AdminUser:
+    if user_id == admin.id:
+        raise HTTPException(400, "Нельзя архивировать собственную учётную запись")
+    user = await session.get(AdminUser, user_id, with_for_update=True)
+    if user is None:
+        raise HTTPException(404, "Сотрудник не найден")
+    if user.is_archived != archived:
+        user.is_archived = archived
+        user.is_active = not archived
+        await session.commit()
     return user

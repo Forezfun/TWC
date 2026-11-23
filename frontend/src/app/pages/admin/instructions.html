@@ -1,0 +1,395 @@
+@if (message()) {
+  <p class="notice" [class.notice--err]="error()" [class.notice--ok]="!error()" [attr.role]="error() ? 'alert' : 'status'">{{ message() }}</p>
+}
+
+@if (addingTopic()) {
+  <form class="card form-grid topic-form" (submit)="$event.preventDefault(); createTopic(topicName.value, topicDescription.value)">
+    <label class="field"><span>Название темы</span><input #topicName class="input" maxlength="80" required /></label>
+    <label class="field"><span>Короткое описание</span><input #topicDescription class="input" maxlength="160" /></label>
+    <button class="btn btn--primary btn--sm" type="submit" [disabled]="busy()">Создать тему</button>
+    <button class="btn btn--ghost btn--sm" type="button" [disabled]="busy()" (click)="addingTopic.set(false)">Отмена</button>
+  </form>
+}
+
+@if (draft(); as item) {
+  <div class="constructor">
+    <header class="constructor-bar">
+      <div class="constructor-title">
+        <button class="btn btn--ghost btn--sm" type="button" [disabled]="busy()" (click)="close()">← К сценариям</button>
+        <strong>{{ item.title || 'Новый сценарий' }}</strong>
+        <span class="pill">{{ published() ? 'На сайте' : 'Черновик' }}</span>
+      </div>
+      <div class="constructor-tabs" aria-label="Режим редактора">
+        <button class="btn btn--ghost btn--sm" type="button" [attr.aria-pressed]="view() === 'step'" (click)="view.set('step')">Редактор шага</button>
+        <button class="btn btn--ghost btn--sm" type="button" [attr.aria-pressed]="view() === 'graph'" (click)="view.set('graph')">Схема связей</button>
+      </div>
+      <div class="constructor-actions">
+        <div class="history-actions" role="group" aria-label="История изменений">
+          <button type="button" class="btn btn--secondary btn--sm history-arrow"
+            aria-label="Отменить действие" aria-keyshortcuts="Control+Z Meta+Z" title="Отменить действие (Ctrl+Z)"
+            [disabled]="busy() || !history().undo.length" (click)="restoreHistory('undo')"><span aria-hidden="true">↶</span></button>
+          <button type="button" class="btn btn--secondary btn--sm history-arrow"
+            aria-label="Повторить действие" aria-keyshortcuts="Control+Y Meta+Y Control+Shift+Z Meta+Shift+Z"
+            title="Повторить действие (Ctrl+Y)" [disabled]="busy() || !history().redo.length"
+            (click)="restoreHistory('redo')"><span aria-hidden="true">↷</span></button>
+        </div>
+        <button type="button" class="btn btn--ghost btn--sm" (click)="check()">Проверить</button>
+        <button type="button" class="btn btn--secondary btn--sm" (click)="openPreview()">Предпросмотр</button>
+        <button type="button" class="btn btn--primary btn--sm" [disabled]="busy()" (click)="save(item.is_published)">Сохранить сценарий</button>
+      </div>
+    </header>
+
+    <details class="scenario-details" [open]="!selectedId()">
+      <summary>Настройки сценария</summary>
+      <fieldset class="editor-fields form-grid" [disabled]="busy()">
+        <div class="stack span2">
+          <label class="field"><span>Название сценария</span>
+            <input class="input" data-draft-text maxlength="120" [value]="item.title" (input)="update({ title: $event.target.value }, 'scenario-title')" />
+          </label>
+          <ng-container [ngTemplateOutlet]="audioControls" [ngTemplateOutletContext]="{
+            label: 'названия сценария', text: item.title,
+            slot: { scope: 'scenario', field: 'title_audio_url' }, file: item.title_audio_url, url: item.title_audio_url
+          }" />
+        </div>
+        <label class="field"><span>Тема сценария</span>
+          <select class="input" [ngModel]="item.topic_id?.toString() ?? ''" (ngModelChange)="update({ topic_id: $event ? +$event : null })" required>
+            <option value="">Выберите тему</option>
+            @for (t of topicItems(); track t.id) { <option [value]="t.id">{{ t.title }}</option> }
+          </select>
+        </label>
+        <label class="field"><span>Кому показать</span>
+          <select class="input" [ngModel]="item.audience" (ngModelChange)="audience($event)">
+            @if (!audienceExists(item.audience)) {
+              <option [value]="item.audience" disabled>{{ item.audience && roleConfig.hasValue() ? 'Роль удалена · выберите другую' : 'Выберите роль' }}</option>
+            }
+            @for (a of audiences(); track a.key) {
+              <option [value]="a.key">{{ a.title }}{{ a.is_hidden ? ' · скрыта в боте' : '' }}</option>
+            }
+          </select>
+          @if (roleConfig.error()) {
+            <button type="button" class="btn btn--secondary btn--sm" (click)="roleConfig.reload()">Загрузить роли снова</button>
+          }
+        </label>
+        <label class="field"><span>Первый шаг</span>
+          <select class="input" [ngModel]="item.start_step_id ?? ''" (ngModelChange)="update({ start_step_id: $event || null })">
+            <option value="">Выберите шаг</option>
+            @for (s of item.steps; track s.id; let i = $index) { <option [value]="s.id">{{ i + 1 }}. {{ s.title || 'Без названия' }}</option> }
+          </select>
+        </label>
+        <div class="stack span2">
+          <label class="field"><span>Короткое описание</span>
+            <textarea #scenarioDescription class="input" data-draft-text maxlength="500" rows="2"
+              [value]="item.description" (input)="update({ description: scenarioDescription.value }, 'scenario-description')"></textarea>
+          </label>
+          <ng-container [ngTemplateOutlet]="audioControls" [ngTemplateOutletContext]="{
+            label: 'короткого описания', text: item.description,
+            slot: { scope: 'scenario', field: 'description_audio_url' }, file: item.description_audio_url, url: item.description_audio_url
+          }" />
+        </div>
+        <button class="btn btn--secondary btn--sm" type="button" (click)="addingTopic.set(true)">Добавить тему</button>
+      </fieldset>
+    </details>
+
+    @if (checked()) {
+      <section class="editor-check stack" [class.notice--ok]="!issues().length"
+        [class.notice--err]="!!issues().length" aria-label="Проверка сценария">
+        <h3>Проверка сценария</h3>
+        @for (issue of issues(); track $index) {
+          @if (issue.stepId) {
+            <button type="button" class="btn btn--secondary btn--sm" (click)="editStep(issue.stepId!)">{{ stepLabel(issue.stepId!) }}. {{ issue.message }}</button>
+          } @else { <p>{{ issue.message }}</p> }
+        } @empty { <p role="status">У каждого шага есть путь к завершению.</p> }
+      </section>
+    }
+
+    @if (view() === 'step') {
+      <div class="constructor-grid">
+        <aside class="step-sidebar stack" aria-label="Структура сценария">
+          <h3>Структура сценария</h3>
+          @for (s of item.steps; track s.id; let i = $index) {
+            <button type="button" class="step-tile" [attr.aria-pressed]="stepId() === s.id" [disabled]="busy()" (click)="editStep(s.id)">
+              <div class="step-tile__picture">
+                @if (s.image_url; as image) { <img [src]="image" alt="" loading="lazy" decoding="async" /> }
+              </div>
+              <strong>Шаг {{ i + 1 }}. {{ s.title || 'Без названия' }}</strong>
+              <small>{{ s.choices.length ? 'Вариантов ответа: ' + s.choices.length : s.next_id ? 'Следующий шаг' : 'Конец' }}</small>
+            </button>
+          }
+          <button type="button" class="btn btn--secondary btn--sm add-dashed" [disabled]="busy() || item.steps.length >= 100" (click)="addStep()">＋ Добавить шаг</button>
+        </aside>
+
+        <section class="step-workspace stack" aria-label="Редактор шага">
+          @if (step(); as s) {
+            <div class="step-heading">
+              <div><small>ШАГ {{ stepNumber() }} ИЗ {{ item.steps.length }}</small><h2>{{ s.title || 'Шаг без названия' }}</h2></div>
+              <details class="step-menu">
+                <summary>Действия</summary>
+                <button class="btn btn--ghost btn--sm" type="button" [disabled]="stepNumber() <= 1" (click)="moveStep(-1)">Переместить выше</button>
+                <button class="btn btn--ghost btn--sm" type="button" [disabled]="stepNumber() >= item.steps.length" (click)="moveStep(1)">Переместить ниже</button>
+                <button class="btn btn--danger btn--sm" type="button" [disabled]="busy()" (click)="removeStep()">Убрать шаг</button>
+              </details>
+            </div>
+            <fieldset class="editor-fields" [disabled]="busy()">
+              <div class="card stack">
+                <h3>Ситуация на шаге</h3>
+                <div class="situation-grid">
+                  <div class="stack">
+                    <div class="step-picture">
+                      @if (s.image_url; as image) { <img [src]="image" alt="" /> } @else { <span>Пиктограмма</span> }
+                    </div>
+                    <button type="button" class="btn btn--secondary btn--sm" [attr.aria-pressed]="!symbolChoice()" (click)="symbolChoice.set(null)">Пиктограмма шага</button>
+                    <label class="btn btn--secondary btn--sm file-button">
+                      Загрузить изображение
+                      <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" (change)="fileSelected($event, { scope: 'step', field: 'image_url' })" />
+                    </label>
+                  </div>
+                  <div class="stack">
+                    <label class="field"><span>Название шага</span>
+                      <input class="input" data-draft-text maxlength="160" [value]="s.title" (input)="patchStep({ title: $event.target.value }, 'title')" />
+                    </label>
+                    <ng-container [ngTemplateOutlet]="audioControls" [ngTemplateOutletContext]="{
+                      label: 'названия шага', text: s.title, slot: { scope: 'step', field: 'title_audio_url' },
+                      file: s.title_audio_url, url: titleAudio()?.url, range: titleAudio()?.range
+                    }" />
+                    <label class="field"><span>Текст шага</span>
+                      <textarea #stepBody class="input" data-draft-text maxlength="4000" rows="3"
+                        [value]="s.body" (input)="patchStep({ body: stepBody.value }, 'body')"></textarea>
+                    </label>
+                    <ng-container [ngTemplateOutlet]="audioControls" [ngTemplateOutletContext]="{
+                      label: 'текста шага', text: s.body, slot: { scope: 'step', field: 'audio_url' },
+                      file: s.audio_url, url: s.audio_url, range: bodyAudioRange()
+                    }" />
+                    <details>
+                      <summary>Ссылки на изображение и озвучку</summary>
+                      <label class="field"><span>Ссылка на изображение</span>
+                        <input class="input" data-draft-text maxlength="2048" [value]="s.image_url ?? ''"
+                          (input)="patchStep({ image_url: $event.target.value.trim() || null }, 'image-url')" />
+                      </label>
+                      <label class="field"><span>Ссылка на запись озвучки</span>
+                        <input class="input" data-draft-text maxlength="2048" [value]="s.audio_url ?? ''"
+                          (input)="patchStep({ audio_url: $event.target.value.trim() || null }, 'audio-url')" />
+                      </label>
+                    </details>
+                  </div>
+                </div>
+              </div>
+              <section class="stack" aria-label="Варианты ответа и переходы">
+                <h3>Варианты ответа и переходы</h3>
+                @if (!s.choices.length) {
+                  <div class="card">
+                    <label class="field"><span>Следующий шаг</span>
+                      <select class="input" [ngModel]="s.next_id ?? ''" (ngModelChange)="patchStep({ next_id: $event || null })">
+                        <ng-container [ngTemplateOutlet]="destinations" [ngTemplateOutletContext]="{ target: s.next_id }" />
+                      </select>
+                    </label>
+                  </div>
+                }
+                @for (choice of s.choices; track choice.id; let index = $index) {
+                  <div class="card answer-row">
+                    <button type="button" class="btn btn--ghost btn--sm answer-symbol" [attr.aria-label]="'Пиктограмма ответа ' + (index + 1)"
+                      [attr.aria-pressed]="symbolChoice() === choice.id" (click)="symbolChoice.set(choice.id)">
+                      @if (choice.image_url; as image) { <img [src]="image" alt="" width="34" height="34" /> }
+                      @else { <span aria-hidden="true">＋</span> }
+                    </button>
+                    <label class="field"><span>Текст ответа {{ index + 1 }}</span>
+                      <input class="input" data-draft-text maxlength="160" [value]="choice.label" (input)="patchChoice(choice.id, { label: $event.target.value })" />
+                    </label>
+                    <span aria-hidden="true" class="answer-arrow">→</span>
+                    <label class="field"><span>Куда ведёт ответ {{ index + 1 }}</span>
+                      <select class="input destination" [ngModel]="choice.next_id ?? ''" (ngModelChange)="patchChoice(choice.id, { next_id: $event || null })">
+                        <ng-container [ngTemplateOutlet]="destinations" [ngTemplateOutletContext]="{ target: choice.next_id }" />
+                      </select>
+                    </label>
+                    <button type="button" class="btn btn--ghost btn--sm" (click)="removeChoice(choice.id)" [attr.aria-label]="'Убрать ответ ' + (index + 1)">Убрать</button>
+                    <div class="answer-audio">
+                      <ng-container [ngTemplateOutlet]="audioControls" [ngTemplateOutletContext]="{
+                        label: 'ответа ' + (index + 1), text: choice.label,
+                        slot: { scope: 'step', field: 'audio_url', choiceId: choice.id }, file: choice.audio_url, url: choice.audio_url
+                      }" />
+                    </div>
+                  </div>
+                }
+                <button type="button" class="btn btn--secondary btn--sm add-dashed" [disabled]="s.choices.length >= 20" (click)="addChoice()">＋ Добавить вариант ответа</button>
+              </section>
+            </fieldset>
+          } @else {
+            <h2>Добавьте первый шаг</h2>
+          }
+        </section>
+
+        <aside class="symbol-library stack" aria-label="Выбор пиктограммы">
+          <h3>Выбор пиктограммы</h3>
+          @if (symbolChoice()) { <p>Для выбранного ответа</p> }
+          @if (pictogramLibrary.isLoading()) {
+            <p role="status">Загружаем пиктограммы…</p>
+          } @else if (pictogramLibrary.error()) {
+            <p role="alert">Не удалось загрузить пиктограммы.</p>
+            <button type="button" class="btn btn--secondary btn--sm" (click)="pictogramLibrary.reload()">Повторить</button>
+          } @else if (!activeSymbols().length) {
+            <p>Выберите пиктограммы для редактора во вкладке «Пиктограммы».</p>
+          } @else {
+            <input class="input" type="search" placeholder="Поиск пиктограмм…" aria-label="Поиск пиктограмм" maxlength="80"
+              [value]="symbolQuery()" (input)="symbolQuery.set($event.target.value)" />
+            <div class="symbol-filters" role="group" aria-label="Категории пиктограмм">
+              @for (category of categories(); track category) {
+                <button type="button" class="btn btn--ghost btn--sm" [attr.aria-pressed]="symbolCategory() === category" (click)="symbolCategory.set(category)">{{ category }}</button>
+              }
+            </div>
+            @if (visibleSymbols().length) {
+              @if (visibleSymbols().length > symbolPageSize) {
+                <twc-pictogram-pages [(page)]="symbolPage" [total]="visibleSymbols().length" [pageSize]="symbolPageSize" />
+              }
+              <div class="symbol-grid">
+                @for (symbol of pageSymbols(); track symbol.id) {
+                  <button type="button" class="symbol-button" [attr.aria-pressed]="selectedSymbol() === symbol.url"
+                    [disabled]="!step() || busy()" (click)="selectSymbol(symbol.url)">
+                    <twc-pictogram-thumbnail [url]="symbol.url" [size]="40" />
+                    <span>{{ symbol.title }}</span>
+                  </button>
+                }
+              </div>
+              @if (arasaacInLibrary()) { <twc-arasaac-credit /> }
+            } @else {
+              <p role="status">Пиктограммы не найдены.</p>
+            }
+          }
+          <label class="btn btn--secondary btn--sm file-button">
+            Загрузить свою пиктограмму
+            <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" [disabled]="!step() || busy()" (change)="uploadSymbol($event)" />
+          </label>
+        </aside>
+      </div>
+    } @else {
+      <div class="graph-workspace">
+        <section class="graph-main stack" aria-label="Схема связей">
+          <div class="admin-head">
+            <h2>Схема связей</h2>
+            <button type="button" class="btn btn--secondary btn--sm" [disabled]="busy() || item.steps.length >= 100" (click)="addStep()">＋ Добавить шаг</button>
+          </div>
+          @if (graph(); as layout) {
+            <div class="graph-scroll" tabindex="0" aria-label="Карта переходов">
+              <div class="graph-board" [style.width.px]="layout.width" [style.height.px]="layout.height">
+                <svg aria-hidden="true" [attr.width]="layout.width" [attr.height]="layout.height">
+                  @for (edge of layout.edges; track edge.id) {
+                    <path [attr.d]="edge.path" fill="none" stroke="#5893a1" stroke-width="1.7" stroke-linejoin="round" marker-end="url(#graph-arrow)" />
+                  }
+                  <defs>
+                    <marker id="graph-arrow" viewBox="0 0 10 10" markerUnits="userSpaceOnUse"
+                      markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+                      <path d="M1 1L9 5L1 9Z" fill="#5893a1" />
+                    </marker>
+                  </defs>
+                </svg>
+                @for (node of layout.nodes; track node.step.id) {
+                  <button type="button" class="graph-node" [style.left.px]="node.x" [style.top.px]="node.y"
+                    [style.width.px]="layout.nodeWidth" [style.height.px]="layout.nodeHeight"
+                    [attr.aria-pressed]="stepId() === node.step.id" [disabled]="busy()" (click)="stepId.set(node.step.id)">
+                    <small>{{ node.step.id === item.start_step_id ? 'Начало сценария' : 'Шаг ' + node.number }}</small>
+                    <strong>{{ node.step.title || 'Шаг без названия' }}</strong>
+                    @if (node.step.image_url; as image) { <img [src]="image" alt="" loading="lazy" decoding="async" /> }
+                  </button>
+                }
+                @if (layout.finish; as finish) {
+                  <div class="graph-node graph-end" [style.left.px]="finish.x" [style.top.px]="finish.y"
+                    [style.width.px]="layout.nodeWidth" [style.height.px]="layout.nodeHeight"><strong>Конец</strong></div>
+                }
+              </div>
+            </div>
+          }
+        </section>
+        <aside class="graph-inspector stack" aria-label="Настройки выбранного шага">
+          <h3>Настройки шага</h3>
+          @if (step(); as s) {
+            <strong>{{ s.title || 'Шаг без названия' }}</strong>
+            @if (s.body) { <p>{{ s.body }}</p> }
+            <ul>
+              @for (choice of s.choices; track choice.id) {
+                <li>{{ choice.label || 'Ответ без подписи' }} → {{ destinationLabel(choice.next_id) }}</li>
+              } @empty { <li>{{ destinationLabel(s.next_id) }}</li> }
+            </ul>
+            <button type="button" class="btn btn--secondary btn--sm" (click)="editStep(s.id)">Открыть редактор шага</button>
+          }
+        </aside>
+      </div>
+    }
+
+    <footer class="constructor-actions publication">
+      <button type="button" class="btn btn--primary btn--sm" [disabled]="busy()" (click)="save(true)">{{ published() ? 'Сохранить на сайте' : 'Опубликовать' }}</button>
+      <button type="button" class="btn btn--secondary btn--sm" [disabled]="busy()" (click)="save(false)">{{ published() ? 'Скрыть из бота' : 'Сохранить черновик' }}</button>
+      @if (selectedId() && published()) {
+        <a class="btn btn--ghost btn--sm" [routerLink]="['/instructions', selectedId()]" target="_blank" rel="noopener">На сайте ↗</a>
+      }
+      @if (selectedId()) { <button type="button" class="btn btn--danger btn--sm" [disabled]="busy()" (click)="remove()">Удалить сценарий</button> }
+    </footer>
+    @if (arasaacInDraft()) { <twc-arasaac-credit class="constructor-credit" /> }
+  </div>
+
+  <ng-template #destinations let-target="target">
+    <option value="">Завершить инструкцию</option>
+    @if (target && !exists(target)) { <option [value]="target">Шаг удалён</option> }
+    @for (step of item.steps; track step.id; let i = $index) { <option [value]="step.id">{{ i + 1 }}. {{ step.title || 'Без названия' }}</option> }
+  </ng-template>
+} @else {
+  <div class="admin-head">
+    <h2>Сценарии</h2>
+    <div class="constructor-actions">
+      <button class="btn btn--secondary btn--sm" type="button" [disabled]="busy()" (click)="addingTopic.set(true)">Добавить тему</button>
+      <button class="btn btn--primary btn--sm" type="button" [disabled]="busy()" (click)="create()">Добавить сценарий</button>
+    </div>
+  </div>
+  <div class="scenario-list-grid">
+    <section class="card stack">
+      <h3>Темы сценариев</h3>
+      @if (topics.error()) { <p role="alert">Не удалось загрузить темы.</p> }
+      <button type="button" class="tree-item" [class.active]="filter() === null" (click)="filter.set(null)">Все сценарии</button>
+      @for (topic of topicItems(); track topic.id) {
+        <button type="button" class="tree-item" [class.active]="filter() === topic.id" (click)="filter.set(topic.id)">{{ topic.title }}</button>
+      }
+    </section>
+    <section class="card stack">
+      <h3>{{ filteredTopic() || 'Все сценарии' }}</h3>
+      @if (list.isLoading()) { <p role="status">Загружаем…</p> }
+      @else if (list.error()) {
+        <p role="alert">Не удалось загрузить сценарии.</p>
+        <button type="button" class="btn btn--secondary" (click)="list.reload()">Повторить</button>
+      } @else {
+        <label class="field scenario-search">
+          Поиск сценариев
+          <input class="input" type="search" placeholder="Введите название или ключевое слово" maxlength="80"
+            [value]="scenarioQuery()" (input)="scenarioQuery.set($event.target.value)" />
+        </label>
+        @for (item of listed(); track item.id) {
+          <button type="button" class="tree-item scenario-row" [disabled]="busy()" (click)="select(item)">
+            <span>{{ item.title || 'Без названия' }}</span>
+            <span class="pill">{{ item.is_published ? 'На сайте' : 'Черновик' }}</span>
+          </button>
+        } @empty { <p role="status">{{ scenarioQuery().trim() ? 'Сценарии не найдены.' : 'Сценариев пока нет.' }}</p> }
+      }
+    </section>
+  </div>
+}
+
+<twc-microphone-dialog (saved)="attachRecording($event)" />
+
+<ng-template #audioControls let-label="label" let-text="text" let-slot="slot"
+  let-file="file" let-url="url" let-range="range">
+  <div class="stack" role="group" [attr.aria-label]="'Озвучка ' + label">
+    <strong>Озвучка {{ label }}</strong>
+    <div class="editor-actions">
+      <twc-audio-preview [src]="url" [sample]="text" [range]="range"
+        [label]="'Прослушать озвучку ' + label" />
+      <button type="button" class="btn btn--secondary btn--sm" [attr.aria-label]="'Записать с микрофона озвучку ' + label"
+        (click)="record(label, slot)">Записать с микрофона</button>
+      <label class="btn btn--secondary btn--sm file-button">
+        {{ file ? 'Заменить аудио' : 'Загрузить аудио' }}
+        <input type="file" accept="audio/*"
+          [attr.aria-label]="(file ? 'Заменить озвучку ' : 'Загрузить озвучку ') + label"
+          (change)="fileSelected($event, slot)" />
+      </label>
+      @if (file) {
+        <button type="button" class="btn btn--ghost btn--sm"
+          [attr.aria-label]="'Убрать озвучку ' + label" (click)="clearAudio(slot)">Убрать запись</button>
+      }
+    </div>
+  </div>
+</ng-template>

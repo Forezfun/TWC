@@ -1,0 +1,11 @@
+Pictograms created by Sergio Palao.
+Copyright: Gobierno de Aragón.
+Source: ARASAAC, https://arasaac.org/
+License: Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International
+https://creativecommons.org/licenses/by-nc-sa/4.0/
+ARASAAC terms of use: https://arasaac.org/terms-of-use
+
+These are original 300 px PNG files supplied by ARASAAC. The drawings are unmodified.
+Each filename is its ARASAAC catalog ID. For example, 2467.png comes from
+https://static.arasaac.org/pictograms/2467/2467_300.png
+and its catalog entry is https://arasaac.org/pictograms/en/2467.

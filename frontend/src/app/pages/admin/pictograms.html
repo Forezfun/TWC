@@ -1,0 +1,77 @@
+<section class="stack" aria-labelledby="pictograms-title">
+  <h2 id="pictograms-title">Пиктограммы</h2>
+  <twc-pictogram-import #importer (imported)="finishImport($event)" />
+  @if (importMessage()) { <p role="status">{{ importMessage() }}</p> }
+  @if (library.isLoading()) {
+    <p role="status">Загружаем пиктограммы…</p>
+  } @else if (library.error()) {
+    <p role="alert">Не удалось загрузить пиктограммы.</p>
+    <div><button type="button" class="btn btn--secondary" (click)="library.reload()">Повторить</button></div>
+  } @else if (library.hasValue() && selection(); as draft) {
+    <div class="card stack">
+      <div class="pictogram-card-heading">
+        <p>Отмеченные пиктограммы будут доступны в редакторе сценариев.</p>
+        <button class="btn btn--primary" type="button" [disabled]="busy()"
+          (click)="importer.open()">Загрузить пиктограммы</button>
+      </div>
+      <fieldset class="pictogram-fields stack" aria-label="Настройка набора пиктограмм" [disabled]="busy()">
+        <div class="pictogram-toolbar">
+          <label class="field">Набор пиктограмм
+            <select #setPicker class="input" [value]="draft.set_id" (change)="chooseSet(setPicker.value)">
+              @for (set of library.value().sets; track set.id) {
+                <option [selected]="set.id === draft.set_id" [value]="set.id">{{ set.title }}</option>
+              }
+            </select>
+          </label>
+          <label class="field">Поиск пиктограмм
+            <input class="input" type="search" maxlength="80" placeholder="Введите название или ключевое слово"
+              [value]="query()" (input)="query.set($event.target.value)" />
+          </label>
+        </div>
+        <fieldset class="category-filters">
+          <legend>Категории</legend>
+          <div class="category-buttons">
+            @for (category of categories(); track category) {
+              <label class="category-option">
+                <input type="checkbox" [checked]="categoryFilter()?.has(category) ?? true"
+                  (change)="toggleCategory(category, $event.target.checked)" />
+                {{ category }}
+              </label>
+            }
+            <button type="button" class="btn btn--ghost btn--sm"
+              [disabled]="(categoryFilter()?.size ?? categories().length) === categories().length"
+              (click)="selectAllCategories()">Выбрать все</button>
+          </div>
+        </fieldset>
+        <div class="pictogram-save">
+          <button type="button" class="btn btn--primary" [disabled]="!hasChanges() || busy()" (click)="save()">
+            {{ busy() ? 'Сохраняем…' : 'Сохранить подборку' }}
+          </button>
+          <p role="status" class="muted">Выбрано {{ selectedIds().size }} из {{ activeSet()?.pictogram_ids?.length ?? 0 }} · Найдено {{ visible().length }}</p>
+        </div>
+        @if (savedMessage()) { <p role="status">{{ savedMessage() }}</p> }
+        @if (saveError()) { <p class="error" role="alert">{{ saveError() }}</p> }
+        @if (draft.set_id === arasaacSetId) { <twc-arasaac-credit class="catalog-credit" /> }
+        @if (visible().length) {
+          @if (visible().length > pageSize) {
+            <twc-pictogram-pages [(page)]="page" [total]="visible().length" [pageSize]="pageSize" />
+          }
+          <ul class="pictogram-tiles">
+            @for (symbol of pagePictograms(); track symbol.id) {
+              <li>
+                <label class="pictogram-option" [class.selected]="selectedIds().has(symbol.id)">
+                  <twc-pictogram-thumbnail [url]="symbol.url" [size]="44" />
+                  <input type="checkbox" [checked]="selectedIds().has(symbol.id)" (change)="toggle(symbol.id, $event.target.checked)" />
+                  <strong>{{ symbol.title }}</strong>
+                  <span class="muted">{{ symbol.category }}</span>
+                </label>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p role="status">Пиктограммы не найдены.</p>
+        }
+      </fieldset>
+    </div>
+  }
+</section>

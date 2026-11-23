@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "version": "761b726dd34f-fbbbc73a13e1",
+  "model": "Xenova/multilingual-e5-small",
+  "revision": "761b726dd34fb83930e26aab4e9ac3899aa1fa78",
+  "index": "arasaac-fbbbc73a13e1.bin",
+  "dimension": 384,
+  "count": 13924,
+  "indexBytes": 5402512,
+  "fileSizes": {
+    "config.json": 658,
+    "tokenizer.json": 17082730,
+    "tokenizer_config.json": 443,
+    "onnx/model_quantized.onnx": 118308185,
+    "ort-wasm-simd-threaded.jsep.wasm": 21596019
+  }
+}

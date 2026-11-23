@@ -10,7 +10,7 @@ import { errorText } from '../../core/admin-api';
     <div class="page login stack-lg">
       <section class="stack">
         <h1>Вход для сотрудников</h1>
-        <p class="muted">Админка навигатора «Колибри». Для пользователей сайта вход не нужен.</p>
+        <p class="muted">Админ-панель навигатора «Колибри». Для пользователей сайта вход не нужен.</p>
       </section>
       <form class="card stack" [formGroup]="form" (ngSubmit)="submit()" novalidate>
         <label class="field">

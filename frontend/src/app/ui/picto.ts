@@ -16,6 +16,7 @@ export type PictoKey =
   | 'shield'
   | 'help'
   | 'calendar'
+  | 'phone'
   | 'people'
   | 'gift'
   | 'link'
@@ -53,6 +54,8 @@ export function pictoFor(n: Pick<ScenarioNode, 'kind' | 'title'>): PictoKey {
   template: `
     <svg
       viewBox="0 0 48 48"
+      [attr.width]="size()"
+      [attr.height]="size()"
       fill="none"
       stroke="currentColor"
       stroke-width="2.4"
@@ -62,6 +65,9 @@ export function pictoFor(n: Pick<ScenarioNode, 'kind' | 'title'>): PictoKey {
       focusable="false"
     >
       @switch (key()) {
+        @case ('phone') {
+          <path d="M13 7 7 11c-3 3 1 12 9 20s17 12 20 9l5-6-10-7-4 4c-4-2-8-6-10-10l4-4z" fill="currentColor" fill-opacity=".18" />
+        }
         @case ('self') {
           <circle cx="24" cy="13" r="7" fill="currentColor" fill-opacity=".18" />
           <path d="M10 42v-6a10 10 0 0 1 10-10h8a10 10 0 0 1 10 10v6" />
@@ -177,6 +183,7 @@ export function pictoFor(n: Pick<ScenarioNode, 'kind' | 'title'>): PictoKey {
 })
 export class Picto {
   readonly key = input.required<PictoKey>();
+  readonly size = input<number | null>(null);
 }
 
 @Component({

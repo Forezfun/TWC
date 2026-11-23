@@ -16,7 +16,7 @@ async def current_admin(request: Request, session: Session) -> AdminUser:
     scheme, _, token = header.partition(" ")
     user_id = read_token(token) if scheme.lower() == "bearer" and token else None
     user = await session.get(AdminUser, user_id) if user_id else None
-    if user is None or not user.is_active:
+    if user is None or not user.is_active or user.is_archived:
         raise HTTPException(
             status.HTTP_401_UNAUTHORIZED,
             "Нужно войти в админку",

@@ -10,6 +10,7 @@ export interface AdminUser {
   email: string;
   name: string;
   is_active: boolean;
+  is_archived?: boolean;
   created_at: string;
 }
 

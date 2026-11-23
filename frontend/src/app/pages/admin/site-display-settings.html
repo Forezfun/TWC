@@ -1,0 +1,105 @@
+<section class="display-settings stack" aria-labelledby="display-roles">
+  @if (resource.isLoading()) {
+    <p id="display-roles" role="status">Загружаем роли и кнопки…</p>
+  } @else if (resource.error()) {
+    <p id="display-roles" role="alert">Не удалось загрузить роли и кнопки.</p>
+    <button type="button" class="btn btn--secondary" (click)="resource.reload()">Повторить</button>
+  } @else {
+    <form class="stack" (ngSubmit)="save()">
+      <h3 id="display-roles">Роли на сайте</h3>
+      @for (role of draft().roles; track role.key; let i = $index) {
+        <fieldset class="role-editor stack" [disabled]="busy()">
+          <legend>{{ role.title || 'Новая роль' }}</legend>
+          <div class="display-actions">
+            <span class="role-icon"><twc-role-pictogram [roleKey]="role.key" [url]="role.icon_url ?? null" [size]="24" /></span>
+            <button type="button" class="btn btn--secondary btn--sm"
+              (click)="pictogramRole.set(role.key); picker.open(role.icon_url)">Изменить пиктограмму</button>
+            <button type="button" class="btn btn--secondary btn--sm" (click)="toggleVisibility(role)">
+              {{ role.is_hidden ? 'Показать в боте' : 'Скрыть роль' }}
+            </button>
+            @if (role.is_hidden) { <span class="muted">Скрыта в боте</span> }
+            <button type="button" class="btn btn--danger btn--sm" (click)="removeRole(role)">Удалить роль</button>
+          </div>
+          @for (field of roleFields; track field.text) {
+            <label class="field">{{ field.label }}
+              <input class="input" [attr.maxlength]="field.limit" [required]="field.text === 'title'"
+                [ngModel]="role[field.text]" [name]="field.text + '-' + i"
+                (ngModelChange)="editRole(role.key, field.text, $event)" />
+            </label>
+            <div class="role-audio stack">
+              <strong>{{ field.audioLabel }}</strong>
+              <div class="display-actions">
+                <label class="btn btn--secondary btn--sm file-button">
+                  <span>Загрузить аудио</span>
+                  <input class="visually-hidden" type="file" accept="audio/*,.m4a,.mp3,.webm"
+                    [attr.aria-label]="field.audioLabel"
+                    (change)="upload(role.key, field.audio, $event.target)" />
+                </label>
+                <button type="button" class="btn btn--secondary btn--sm"
+                  (click)="recordingTarget.set({ key: role.key, field: field.audio }); mic.open(field.audioLabel + ' · ' + (role.title || 'Новая роль'))">
+                  Записать с микрофона
+                </button>
+                @if (role[field.audio]; as recording) {
+                  <twc-audio-preview [src]="recording" [label]="'Прослушать · ' + field.audioLabel + ' · ' + role.title" />
+                  <button type="button" class="btn btn--ghost btn--sm"
+                    (click)="editRole(role.key, field.audio, null)">Убрать озвучку</button>
+                }
+              </div>
+            </div>
+          }
+        </fieldset>
+      }
+      <div class="display-actions">
+        <button type="button" class="btn btn--secondary" [disabled]="busy() || draft().roles.length >= 100"
+          (click)="addRole()">Добавить роль</button>
+        <button type="submit" class="btn btn--primary" [disabled]="!canSave()"
+          (click)="messageArea.set('roles')">Сохранить роли и кнопки</button>
+        @if (hasNewRole()) {
+          <p class="muted">После сохранения новые роли появятся в меню и редакторе сценариев.</p>
+        }
+        @if (message() && messageArea() === 'roles') {
+          <p class="notice" [class.notice--err]="failed()" [class.notice--ok]="!failed()"
+            [attr.role]="failed() ? 'alert' : 'status'">{{ message() }}</p>
+        }
+      </div>
+      <h3>Кнопки в сценариях</h3>
+      @for (kind of kinds; track kind) {
+        <fieldset class="button-editor stack" [disabled]="busy()">
+          <legend>{{ names[kind] }}</legend>
+          <label class="field">Надпись
+            <input class="input" maxlength="60" required [ngModel]="draft()[kind].label"
+              [name]="kind + '-label'" (ngModelChange)="editButton(kind, { label: $event })" />
+          </label>
+          <label class="field">Ссылка
+            <input class="input" maxlength="2048" type="url" placeholder="https://"
+              [ngModel]="draft()[kind].url ?? ''" [name]="kind + '-url'"
+              (ngModelChange)="editButton(kind, { url: $event.trim() || null })" />
+          </label>
+          <fieldset class="role-visibility">
+            <legend>Показывать в сценариях для ролей</legend>
+            <div class="role-options">
+              @for (role of draft().roles; track role.key) {
+                <label class="role-choice" [class.selected]="draft()[kind].role_keys.includes(role.key)">
+                  <span class="role-icon"><twc-role-pictogram [roleKey]="role.key" [url]="role.icon_url ?? null" [size]="22" /></span>
+                  <span>{{ role.title || 'Новая роль' }}</span>
+                  <input type="checkbox" [checked]="draft()[kind].role_keys.includes(role.key)"
+                    (change)="toggleRole(kind, role.key, $event.target.checked)" />
+                </label>
+              }
+            </div>
+          </fieldset>
+        </fieldset>
+      }
+      <div class="display-actions">
+        <button type="submit" class="btn btn--primary" [disabled]="!canSave()"
+          (click)="messageArea.set('buttons')">Сохранить роли и кнопки</button>
+        @if (message() && messageArea() === 'buttons') {
+          <p class="notice" [class.notice--err]="failed()" [class.notice--ok]="!failed()"
+            [attr.role]="failed() ? 'alert' : 'status'">{{ message() }}</p>
+        }
+      </div>
+    </form>
+    <twc-microphone-dialog #mic (saved)="useRecording($event)" />
+    <twc-role-pictogram-dialog #picker (chosen)="usePictogram($event)" />
+  }
+</section>

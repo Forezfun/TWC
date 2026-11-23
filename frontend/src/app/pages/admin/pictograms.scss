@@ -1,0 +1,77 @@
+.pictogram-card-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.pictogram-card-heading p { flex: 1 1 280px; }
+.pictogram-card-heading .btn { margin-inline-start: auto; }
+
+.pictogram-fields {
+  border: 0;
+  margin: 0;
+  min-inline-size: 0;
+  padding: 0;
+}
+
+.pictogram-toolbar {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  max-width: 820px;
+}
+
+.category-filters { min-inline-size: 0; margin: 0; padding: 0; border: 0; }
+.category-filters legend { padding: 0; margin-bottom: 6px; font-weight: 600; }
+.category-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+.category-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-block-size: 44px;
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  padding-inline: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.category-option:has(input:checked) { border-color: #90b9b9; background: var(--card); }
+.category-option input, .pictogram-option input {
+  width: 18px; height: 18px; margin: 1px; accent-color: var(--primary);
+}
+
+.pictogram-fields > twc-pictogram-pages { margin-block-end: 16px; }
+
+.pictogram-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 163px), 1fr));
+  gap: 10px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.pictogram-option {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+  height: 100%;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--white);
+  cursor: pointer;
+}
+
+.pictogram-option.selected {
+  border-color: #90b9b9;
+  background: var(--card);
+}
+
+.pictogram-option strong, .pictogram-option span { grid-column: 1 / -1; overflow-wrap: anywhere; }
+.pictogram-save { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+.catalog-credit { margin-block-end: 14px; }

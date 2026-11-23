@@ -6,10 +6,11 @@ import { Api, Audience, ScenarioNode, audienceLabel, indexTree, isAudience } fro
 import { NavState } from '../core/nav';
 import { Speech } from '../core/speech';
 import { Picto, Chevron, pictoFor } from '../ui/picto';
-import { Listen } from '../ui/listen';
+import { ReadCard } from '../ui/read-card';
+import { Spoken } from '../ui/spoken';
 
 @Component({
-  imports: [RouterLink, Picto, Chevron, Listen],
+  imports: [RouterLink, Picto, Chevron, ReadCard, Spoken],
   template: `
     <div class="page stack-lg">
       @if (tree.isLoading()) {
@@ -18,39 +19,34 @@ import { Listen } from '../ui/listen';
         <div class="card card--danger stack">
           <p><strong>Не удалось загрузить раздел.</strong></p>
           <p>Проверьте интернет и нажмите «Повторить».</p>
-          <button type="button" class="btn btn--primary" (click)="tree.reload()">Повторить</button>
+          <button type="button" class="btn btn--primary" (click)="tree.reload()"><twc-spoken text="Повторить" /></button>
         </div>
       } @else if (!node()) {
         <div class="card card--sand stack">
           <p><strong>Такого раздела нет.</strong></p>
-          <a class="btn btn--primary" [routerLink]="['/', audience()]">К списку тем</a>
+          <a class="btn btn--primary" [routerLink]="['/', audience()]"><twc-spoken text="К списку тем" /></a>
         </div>
       } @else {
         <p class="crumb">{{ label() }}{{ parent() ? ' · ' + parent()!.title : '' }}</p>
 
         <section class="card stack" [class.card--tint]="node()!.kind === 'menu'">
-          <h1>{{ node()!.title }}</h1>
+          <h1><twc-spoken [text]="node()!.title" [recording]="node()!.body ? null : node()!.audio_url" /></h1>
           @if (node()!.image_url) {
             <img class="media" [src]="node()!.image_url" alt="" />
           }
           @if (node()!.body) {
-            <p class="body-text">{{ node()!.body }}</p>
+            <p class="body-text"><twc-spoken [text]="node()!.body!" [recording]="node()!.audio_url" /></p>
           }
-          <twc-listen [text]="speakText()" />
-          @if (node()!.audio_url) {
-            <audio controls preload="none" [src]="node()!.audio_url">
-              Аудио недоступно в вашем браузере.
-            </audio>
-          }
+
         </section>
 
         @switch (node()!.kind) {
           @case ('menu') {
             <div class="stack" role="list" aria-label="Подразделы">
               @for (c of node()!.children; track c.id) {
+                <div class="sound-card" role="listitem">
                 <a
                   class="tile tile--{{ c.kind }}"
-                  role="listitem"
                   [routerLink]="['/', audience(), c.id]"
                 >
                   <span class="tile__icon">
@@ -60,9 +56,11 @@ import { Listen } from '../ui/listen';
                       <twc-picto [key]="picto(c)" />
                     }
                   </span>
-                  <span class="tile__label">{{ c.title }}</span>
+                  <span class="tile__label"><twc-spoken [text]="c.title" /></span>
                   <twc-chevron />
                 </a>
+                <twc-card-sound [label]="c.title" />
+                </div>
               } @empty {
                 <div class="card card--sand">
                   <p>В этой теме пока нет материалов. Можно задать вопрос сотруднику.</p>
@@ -71,7 +69,7 @@ import { Listen } from '../ui/listen';
                   class="btn btn--primary btn--block"
                   routerLink="/consult"
                   [queryParams]="{ audience: audience() }"
-                  >Записаться на консультацию</a
+                  ><twc-spoken text="Записаться на консультацию" /></a
                 >
               }
             </div>
@@ -86,7 +84,7 @@ import { Listen } from '../ui/listen';
                 class="btn btn--primary btn--block"
                 routerLink="/consult"
                 [queryParams]="{ audience: audience() }"
-                >Выбрать время</a
+                ><twc-spoken text="Выбрать время" /></a
               >
             </div>
           }
@@ -99,7 +97,7 @@ import { Listen } from '../ui/listen';
                 target="_blank"
                 rel="noopener"
               >
-                Перейти к пожертвованию
+                <twc-spoken text="Перейти к пожертвованию" />
               </a>
               <p class="field__hint">Страница откроется в новой вкладке браузера.</p>
             </div>
@@ -119,7 +117,7 @@ import { Listen } from '../ui/listen';
                 class="btn btn--primary btn--block"
                 routerLink="/consult"
                 [queryParams]="{ audience: audience(), topic: 'Хочу стать волонтёром' }"
-                >Оставить заявку</a
+                ><twc-spoken text="Оставить заявку" /></a
               >
             </div>
           }
@@ -130,7 +128,7 @@ import { Listen } from '../ui/listen';
                 [href]="node()!.link_url"
                 target="_blank"
                 rel="noopener"
-                >Открыть страницу</a
+                ><twc-spoken text="Открыть страницу" /></a
               >
               <p class="field__hint">Страница откроется в новой вкладке браузера.</p>
             }
@@ -141,7 +139,7 @@ import { Listen } from '../ui/listen';
               routerLink="/consult"
               [queryParams]="{ audience: audience(), topic: node()!.title }"
             >
-              Остались вопросы? Записаться на консультацию
+              <twc-spoken text="Остались вопросы? Записаться на консультацию" />
             </a>
           }
         }
@@ -184,12 +182,6 @@ export class NodePage {
     return p ? this.index().get(p) : undefined;
   });
   protected readonly label = computed(() => audienceLabel(this.audience()));
-  protected readonly speakText = computed(() => {
-    const n = this.node();
-    if (!n) return '';
-    const kids = n.children.map((c) => c.title).join('. ');
-    return [n.title, n.body ?? '', kids].filter(Boolean).join('. ');
-  });
   protected readonly donateMessage = computed(
     () => this.settings.value()['donate_message'] || 'Спасибо, что хотите поддержать «Колибри»!',
   );

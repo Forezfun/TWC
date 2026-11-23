@@ -1,0 +1,66 @@
+from base64 import b64decode
+from copy import deepcopy
+
+import pytest
+
+library_path = "/api/admin/pictograms"
+import_path = f"{library_path}/import"
+png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a/4sAAAAASUVORK5CYII="
+
+
+@pytest.fixture
+def bundle():
+    return {
+        "version": 1,
+        "title": "Навигация",
+        "pictograms": [{
+            "title": "Остановка",
+            "category": "Транспорт",
+            "aliases": ["автобус"],
+            "image": {"mime_type": "image/png", "base64": png},
+        }],
+    }
+
+
+async def test_import_requires_staff(client, bundle):
+    assert (await client.post(import_path, json=bundle)).status_code == 401
+
+
+async def test_import_persists_metadata_separately_from_image(admin, bundle):
+    created = await admin.post(import_path, json=bundle)
+    assert created.status_code == 201
+    new_set = created.json()["set"]
+    pictogram, = created.json()["pictograms"]
+    assert pictogram["aliases"] == ["автобус"]
+    library = (await admin.get(library_path)).json()
+    assert new_set in library["sets"]
+    assert pictogram in library["pictograms"]
+    assert "base64" not in pictogram
+    assert library["selection"]["set_id"] == "kolibri-all"
+
+    repeated = await admin.post(import_path, json=bundle)
+    assert repeated.status_code == 200
+    assert repeated.json() == created.json()
+    changed = deepcopy(bundle)
+    changed["pictograms"][0]["title"] = "Переход"
+    assert (await admin.post(import_path, json=changed)).status_code == 409
+
+    selection = {"set_id": new_set["id"], "pictogram_ids": new_set["pictogram_ids"]}
+    assert (await admin.put(library_path, json=selection)).status_code == 200
+    assert (await admin.get(library_path)).json()["selection"] == selection
+
+    del admin.headers["Authorization"]
+    image = await admin.get(pictogram["url"])
+    assert image.content == b64decode(png)
+    assert image.headers["content-type"] == "image/png"
+    assert "immutable" in image.headers["cache-control"]
+
+
+async def test_import_rejects_invalid_image_without_creating_set(admin, bundle):
+    bundle["pictograms"].append({
+        "title": "Неверный формат",
+        "image": {"mime_type": "image/png", "base64": "dGVzdA=="},
+    })
+    assert (await admin.post(import_path, json=bundle)).status_code == 422
+    library = (await admin.get(library_path)).json()
+    assert all(row["title"] != bundle["title"] for row in library["sets"])

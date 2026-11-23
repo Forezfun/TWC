@@ -27,6 +27,11 @@
               {
                 "glob": "**/*",
                 "input": "public"
+              },
+              {
+                "glob": "ort-wasm-simd-threaded.jsep.{mjs,wasm}",
+                "input": "node_modules/@huggingface/transformers/dist",
+                "output": "/kolibri/pictogram-search/runtime-3.8.1/"
               }
             ],
             "styles": [

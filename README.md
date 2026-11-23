@@ -93,12 +93,14 @@ sudo systemctl status twc-frontend
 cd /opt/twc/backend
 uv sync --no-dev
 sudo cp ../deploy/systemd/twc-backend.service.example /etc/systemd/system/twc-backend.service
-sudo nano /etc/twc/backend.env    # DATABASE_URL, ADMIN_TOKEN, CORS_ORIGINS — см. backend/.env.example
+sudo nano /etc/twc/backend.env
 sudo systemctl daemon-reload
 sudo systemctl enable --now twc-backend
 ```
 
 Миграции применяются автоматически при старте сервиса.
+В `/etc/twc/backend.env` задайте `DATABASE_URL`, `JWT_SECRET` и `CORS_ORIGINS`
+(см. `backend/.env.example`).
 
 Для внешнего доступа пример `deploy/nginx/twc.conf.example` направляет:
 

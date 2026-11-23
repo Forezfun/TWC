@@ -1,0 +1,70 @@
+<dialog #dialog class="import-dialog" aria-labelledby="import-title"
+  (cancel)="busy() && $event.preventDefault()">
+  <form class="stack" (submit)="submit($event)">
+    <h3 id="import-title">Загрузить пиктограммы</h3>
+    <div class="import-actions">
+      <button class="btn btn--secondary" type="button" [attr.aria-pressed]="mode() === 'manual'"
+        [disabled]="busy()" (click)="chooseMode('manual')">Вручную</button>
+      <button class="btn btn--secondary" type="button" [attr.aria-pressed]="mode() === 'json'"
+        [disabled]="busy()" (click)="chooseMode('json')">Из JSON</button>
+      <button class="btn btn--ghost" type="button" (click)="copyPrompt()">Скопировать промпт для ИИ</button>
+    </div>
+    @if (copyMessage()) { <p class="muted" role="status">{{ copyMessage() }}</p> }
+    @if (showPrompt()) {
+      <label class="field">Промпт для ИИ
+        <textarea class="input" rows="6" readonly [value]="prompt"></textarea>
+      </label>
+    }
+    @if (mode() === 'manual') {
+      <label class="field">Название набора
+        <input class="input" maxlength="120" [value]="title()" [disabled]="busy()"
+          (input)="title.set($event.target.value)" required />
+      </label>
+      <label class="field">Изображения
+        <input class="input" type="file" multiple [accept]="accept" [disabled]="busy()"
+          (change)="addFiles($event.target)" aria-describedby="import-file-hint" />
+      </label>
+      <p id="import-file-hint" class="muted">PNG, JPEG, WebP до 512 КБ. До 250 изображений на набор, общий размер до 16 МБ.</p>
+      @if (items().length) {
+        <ul class="import-items">
+          @for (item of items(); track item.file; let i = $index) {
+            <li>
+              <fieldset class="import-item" [disabled]="busy()">
+                <legend>{{ item.file.name }}</legend>
+                <label class="field">Название
+                  <input class="input" maxlength="120" [value]="item.title" required
+                    (input)="changeItem(i, { title: $event.target.value })" />
+                </label>
+                <label class="field">Категория
+                  <select #categoryPicker class="input" [value]="item.category"
+                    (change)="changeCategory(i, categoryPicker.value)">
+                    @for (category of categories; track category) {
+                      <option [value]="category" [selected]="category === item.category">{{ category }}</option>
+                    }
+                  </select>
+                </label>
+                <label class="field">Ключевые слова через запятую
+                  <input class="input" [value]="item.aliases" (input)="changeItem(i, { aliases: $event.target.value })" />
+                </label>
+                <button class="btn btn--ghost" type="button" (click)="removeItem(i)">Убрать</button>
+              </fieldset>
+            </li>
+          }
+        </ul>
+      }
+    } @else {
+      <label class="field">Файл набора JSON
+        <input class="input" type="file" accept=".json,application/json" [disabled]="busy()"
+          (change)="chooseBundle($event.target)" />
+      </label>
+      @if (bundleFile(); as file) { <p class="muted">{{ file.name }}</p> }
+    }
+    @if (problem()) { <p class="error" role="alert">{{ problem() }}</p> }
+    <div class="import-actions">
+      <button class="btn btn--primary" type="submit" [disabled]="!canSubmit()">
+        {{ busy() ? 'Загружаем…' : 'Загрузить набор' }}
+      </button>
+      <button class="btn btn--secondary" type="button" [disabled]="busy()" (click)="close()">Закрыть</button>
+    </div>
+  </form>
+</dialog>

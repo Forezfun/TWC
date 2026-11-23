@@ -2,8 +2,10 @@ import { HttpClient, httpResource } from '@angular/common/http';
 import { Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { isPlatformServer } from '@angular/common';
 import { Observable } from 'rxjs';
+import type { RecordedField, VoiceRecording } from './voice-recordings';
 
-export type Audience = 'parents' | 'specialists' | 'self';
+type BuiltinAudience = 'parents' | 'specialists' | 'self';
+export type Audience = string;
 export type NodeKind = 'menu' | 'answer' | 'consult' | 'donate' | 'volunteer' | 'link';
 
 export interface ScenarioNode {
@@ -26,21 +28,29 @@ export interface Slot {
   starts_at: string;
   ends_at: string;
   is_open: boolean;
+  specialist_id?: number | null;
+  specialist_name?: string | null;
 }
 
 export interface RequestPayload {
-  name: string;
+  name?: string | null;
   contact: string;
   audience: Audience | null;
   comment: string | null;
   preferred_time: string | null;
   slot_id: number | null;
+  voice_answers?: Partial<Record<RecordedField, VoiceRecording>>;
 }
 
-export interface RequestResult extends RequestPayload {
+export interface RequestResult extends Omit<RequestPayload, 'voice_answers'> {
+  closure_reason?: string | null;
+  voice_fields?: RecordedField[];
   id: number;
+  demo?: boolean;
   status: string;
   slot: Slot | null;
+  specialist_id?: number | null;
+  specialist_name?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -55,7 +65,7 @@ export const AUDIENCES: { key: Audience; label: string; hint: string }[] = [
   { key: 'specialists', label: 'Для специалистов', hint: 'Методики, адаптация занятий, общение' },
 ];
 
-export function isAudience(value: string | null | undefined): value is Audience {
+export function isAudience(value: string | null | undefined): value is BuiltinAudience {
   return value === 'parents' || value === 'specialists' || value === 'self';
 }
 

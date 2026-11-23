@@ -93,7 +93,8 @@ async def test_list_filter_and_export(admin: AsyncClient) -> None:
     assert r.headers["content-type"].startswith("text/csv")
     lines = r.text.lstrip("﻿").splitlines()
     assert lines[0].startswith("id,")
-    assert len(lines) == 3 and "Мария" in lines[2]
+    assert len(lines) == 3 and "Мария" not in r.text
+    assert "имя" not in lines[0].split(",")
 
     assert (
         await admin.patch("/api/admin/requests/999", json={"status": "done"})

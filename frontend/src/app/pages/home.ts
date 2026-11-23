@@ -1,65 +1,54 @@
 import { Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { AUDIENCES, Api } from '../core/api';
-import { Picto, Chevron } from '../ui/picto';
-import { Listen } from '../ui/listen';
-import { StaffLink } from '../ui/staff-link';
+import { Api } from '../core/api';
+import { DEFAULT_SITE_DISPLAY, SiteDisplayApi, SiteRole } from '../core/site-display';
+import { Chevron } from '../ui/picto';
+import { RolePictogram } from '../ui/role-pictogram';
+import { Spoken } from '../ui/spoken';
+import { ReadCard } from '../ui/read-card';
 
 @Component({
-  imports: [RouterLink, Picto, Chevron, Listen, StaffLink],
+  imports: [RouterLink, RolePictogram, Chevron, Spoken, ReadCard],
   template: `
-    <div class="page stack-lg">
-      <section class="card card--tint stack">
-        <h1>Здравствуйте!</h1>
-        <p class="body-text">{{ welcome() }}</p>
-        <twc-listen [text]="'Здравствуйте! ' + welcome()" />
-      </section>
-
-      <section class="stack">
-        <h2 id="who">Для кого нужна помощь?</h2>
-        <div class="stack" role="list" aria-labelledby="who">
-          @for (a of audiences; track a.key) {
-            <a class="tile tile--{{ a.key }}" role="listitem" [routerLink]="['/', a.key]">
-              <span class="tile__icon"><twc-picto [key]="a.key" /></span>
-              <span class="tile__label"
-                >{{ a.label }}<span class="tile__hint">{{ a.hint }}</span></span
-              >
+    <div class="page page--scroll stack role-page">
+      <h1><twc-spoken text="Кто пользуется помощником?" recording="/kolibri/system-audio/roles-title.mp3" /></h1>
+      @if (welcome(); as text) {
+        <p class="body-text"><twc-spoken [text]="text" /></p>
+      }
+      <div class="stack audience-list">
+        @if (site.isLoading()) {
+          <p role="status">Загружаем роли…</p>
+        } @else if (site.error()) {
+          <button type="button" class="btn btn--secondary" (click)="site.reload()">Загрузить роли снова</button>
+        } @else if (site.hasValue() && !audiences().length) {
+          <p>Сейчас нет доступных ролей.</p>
+        }
+        @for (a of audiences(); track a.key) {
+          <div class="sound-card">
+            <a class="tile" [routerLink]="['/', a.key]">
+              <span class="tile__icon"><twc-role-pictogram [roleKey]="a.key" [url]="a.icon_url ?? null" /></span>
+              <span class="tile__label">
+                <twc-spoken [text]="a.title" [recording]="a.audio_url" [systemButton]="isStandardRole(a)" />
+                @if (a.hint) { <span class="tile__hint"><twc-spoken [text]="a.hint" [recording]="a.hint_audio_url ?? null" systemText /></span> }
+              </span>
               <twc-chevron />
             </a>
-          }
-        </div>
-      </section>
-
-      <a class="btn btn--primary btn--block" routerLink="/help">
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          aria-hidden="true"
-        >
-          <path d="M4 5h16v11H9l-5 4z" />
-        </svg>
-        Связаться с сотрудником
-      </a>
-
-      <twc-staff-link />
+            <twc-card-sound [label]="a.title" />
+          </div>
+        }
+      </div>
     </div>
   `,
 })
 export class Home {
-  private readonly api = inject(Api);
-  protected readonly audiences = AUDIENCES;
-  private readonly settings = this.api.settings();
-  /** Текст из настроек может начинаться с приветствия, которое уже есть в заголовке. */
-  protected readonly welcome = computed(() =>
-    (
-      this.settings.value()['welcome_text'] ||
-      'Я помогу найти нужную информацию и связаться с «Колибри».'
-    )
-      .replace(/^здравствуйте!?\s*/i, '')
-      .replace(/^./, (c) => c.toUpperCase()),
-  );
+  private readonly settings = inject(Api).settings();
+  protected readonly welcome = computed(() => (this.settings.value()['welcome_text'] ?? '')
+    .replace(/^здравствуйте!?\s*/i, '').replace(/^./, (letter) => letter.toUpperCase()));
+  private readonly config = inject(SiteDisplayApi);
+  protected readonly site = this.config.resource;
+  protected readonly audiences = this.config.roles;
+
+  protected isStandardRole(role: SiteRole): boolean {
+    return DEFAULT_SITE_DISPLAY.roles.some(({ key, title }) => key === role.key && title === role.title);
+  }
 }

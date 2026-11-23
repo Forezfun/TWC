@@ -1,0 +1,25 @@
+.import-dialog {
+  color: var(--text);
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  inline-size: min(960px, calc(100% - 24px));
+  max-block-size: calc(100dvh - 32px);
+  padding: clamp(16px, 3vw, 24px);
+}
+.import-dialog::backdrop { background: rgb(18 35 45 / 48%); }
+.import-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.import-actions [aria-pressed='true'] { background: var(--card); }
+.import-items { display: grid; list-style: none; gap: 12px; margin: 0; padding: 0; }
+.import-item {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+  align-items: end;
+  gap: 8px;
+  min-inline-size: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+}
+.import-item legend { overflow-wrap: anywhere; max-inline-size: 100%; }
+.import-item button { justify-self: start; }

@@ -23,10 +23,14 @@ describe('Prefs', () => {
   it('applies text size class to <html> and persists changes', async () => {
     const prefs = TestBed.inject(Prefs);
     prefs.textSize.set('lg');
+    prefs.warm.set(true);
     await TestBed.inject(AppRef).whenStable();
     expect(document.documentElement.classList.contains('text-lg')).toBe(true);
     expect(document.documentElement.classList.contains('text-xl')).toBe(false);
-    expect(JSON.parse(localStorage.getItem('twc-prefs')!)).toEqual({ textSize: 'lg', sound: true });
+    expect(document.documentElement.classList.contains('warm-background')).toBe(true);
+    expect(JSON.parse(localStorage.getItem('twc-prefs')!)).toEqual({
+      textSize: 'lg', sound: true, warm: true, onboarded: false,
+    });
   });
 });
 

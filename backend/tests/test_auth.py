@@ -80,3 +80,36 @@ async def test_create_user_and_change_password(admin: AsyncClient) -> None:
         "/api/admin/login", json={"email": ADMIN_EMAIL, "password": "new-password"}
     )
     assert r.status_code == 200
+
+
+async def test_archiving_and_restoring_employee(admin: AsyncClient, admin_user: AdminUser) -> None:
+    credentials = {"email": "archive@example.com", "password": "password-1"}
+    other = await admin.post("/api/admin/users", json={**credentials, "name": "Сотрудник"})
+    assert other.status_code == 201
+    user_id = other.json()["id"]
+    path = f"/api/admin/users/{user_id}"
+    token = (await admin.post("/api/admin/login", json=credentials)).json()["token"]
+    staff_session = {"Authorization": f"Bearer {token}"}
+
+    archived = await admin.patch(path + "/archive", params={"archived": "true"})
+    assert archived.status_code == 200
+    assert archived.json()["is_archived"] is True
+    assert archived.json()["is_active"] is False
+    assert user_id not in {user["id"] for user in (await admin.get("/api/admin/users")).json()}
+    archive = await admin.get("/api/admin/users", params={"archived": "true"})
+    assert [user["id"] for user in archive.json()] == [user_id]
+    assert (await admin.get("/api/admin/me", headers=staff_session)).status_code == 401
+    assert (await admin.post("/api/admin/login", json=credentials)).status_code == 401
+    assert (await admin.patch(path + "/active", params={"active": "true"})).status_code == 409
+
+    restored = await admin.patch(path + "/archive", params={"archived": "false"})
+    assert restored.status_code == 200
+    assert restored.json()["is_archived"] is False
+    assert restored.json()["is_active"] is True
+    assert (await admin.get("/api/admin/users?archived=true")).json() == []
+    assert (await admin.post("/api/admin/login", json=credentials)).status_code == 200
+
+    own = await admin.patch(
+        f"/api/admin/users/{admin_user.id}/archive", params={"archived": "true"}
+    )
+    assert own.status_code == 400

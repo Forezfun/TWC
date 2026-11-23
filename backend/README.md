@@ -5,16 +5,49 @@ FastAPI + SQLAlchemy 2 (async) + Alembic + PostgreSQL. Все пути под `/
 
 ## Запуск локально
 
-Требования: Python 3.12+, [uv](https://docs.astral.sh/uv/), PostgreSQL 16+
-(локальный или `docker compose up -d` в этой папке).
+Требования: Python 3.12+, [uv](https://docs.astral.sh/uv/), PostgreSQL 16+.
+PostgreSQL можно запустить локально или через Docker Compose, как показано ниже.
+
+Из корня репозитория перейдите в backend. Если терминал открыт в другой папке,
+укажите полный путь к каталогу `backend`.
 
 ```bash
 cd backend
-cp .env.example .env            # поправить DATABASE_URL и ADMIN_TOKEN
-uv sync                         # зависимости в .venv
-uv run alembic upgrade head     # схема БД
-uv run python -m app.seed       # три ветки из ответов НКО + настройки (идемпотентно)
-uv run python -m app.create_admin admin@example.com   # первый сотрудник админки
+cp -n .env.example .env
+```
+
+В `.env` проверьте `DATABASE_URL` и замените `JWT_SECRET=change-me` случайным
+секретом, который можно получить командой `openssl rand -hex 32`.
+`cp -n` сохраняет существующий `.env` при повторном запуске.
+
+Если `uv` установлен в `~/.local/bin`, но терминал пишет `command not found: uv`,
+добавьте этот каталог в PATH текущего терминала:
+
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+uv --version
+```
+
+Если PostgreSQL ещё не запущен, поднимите его через Docker Compose из этой папки
+(нужен установленный и запущенный Docker):
+
+```bash
+docker compose up -d
+```
+
+Установите зависимости в `.venv`, примените миграции и заполните три ветки
+навигатора и настройки. Повторный запуск `app.seed` безопасен. Затем создайте
+первого сотрудника: замените `admin@example.com` своим адресом и введите пароль
+в терминале. Последняя команда запускает сервер.
+
+Команды можно копировать в интерактивный zsh: комментарии после команд убраны,
+поскольку по умолчанию zsh может воспринимать их как аргументы.
+
+```bash
+uv sync
+uv run alembic upgrade head
+uv run python -m app.seed
+uv run python -m app.create_admin admin@example.com
 uv run uvicorn app.main:app --reload --port 3000
 ```
 
@@ -51,6 +84,10 @@ alembic/           # миграции
   есть заявка не в статусе `cancelled`.
 - `consultation_requests` — заявки: имя, контакт, аудитория, слот или
   `preferred_time` текстом, статус `new` / `confirmed` / `done` / `cancelled`.
+- `callback_requests` — подтверждения просьб перезвонить. Хранят исходный номер,
+  согласие и ключ защиты от повтора, связаны с общей заявкой в `consultation_requests`.
+  После создания у общей заявки заполнен только контакт, статус `new`.
+  Вход заявителю не нужен.
 
 ## API
 
@@ -63,6 +100,7 @@ alembic/           # миграции
 | GET | `/api/settings` | Все настройки словарём |
 | GET | `/api/slots` | Свободные слоты |
 | POST | `/api/requests` | Создать заявку (409 если слот занят или запись закрыта) |
+| POST | `/api/callback-requests` | Сохранить просьбу перезвонить: `{phone, consent: true, idempotency_key}`; 201 при создании, 200 при повторе |
 | GET | `/api/health` | Проверка живости |
 
 Авторизация админки:
@@ -91,8 +129,9 @@ uv run python -m app.create_admin admin@anokolibri.ru "Имя"
 | PUT | `/api/admin/settings/{key}` | Создать или изменить настройку |
 | GET/POST | `/api/admin/slots` | Слоты с признаком занятости / создать |
 | DELETE | `/api/admin/slots/{id}` | Удалить слот |
-| GET | `/api/admin/requests` | Заявки (`?status=` для фильтра) |
-| PATCH | `/api/admin/requests/{id}` | Сменить статус |
+| GET | `/api/admin/requests` | Общий список заявок, включая обратные звонки (`?status=` для фильтра) |
+| GET | `/api/admin/callback-requests` | Исторический интерфейс чтения подтверждений обратных звонков |
+| PATCH | `/api/admin/requests/{id}` | Изменить заявку. Действие `no_consultation` завершает заявку до назначения встречи и сохраняет причину |
 | GET | `/api/admin/requests/export.csv` | Выгрузка в CSV |
 
 ## Тесты

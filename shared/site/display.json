@@ -1,0 +1,9 @@
+{
+  "roles": [
+    { "key": "self", "title": "Я пользуюсь сам", "hint": "Повседневные дела, общение, безопасность", "audio_url": null },
+    { "key": "parents", "title": "Я близкий человек", "hint": "Обучение, поведение, помощь, поддержка", "audio_url": null },
+    { "key": "specialists", "title": "Я специалист", "hint": "Методики, адаптация занятий, общение", "audio_url": null }
+  ],
+  "donate": { "label": "Пожертвовать", "url": "https://anokolibri.ru/donate", "role_keys": ["parents", "specialists"] },
+  "volunteer": { "label": "Стать волонтёром", "url": null, "role_keys": ["parents", "specialists"] }
+}

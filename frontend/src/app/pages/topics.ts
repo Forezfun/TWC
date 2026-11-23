@@ -5,16 +5,19 @@ import { map } from 'rxjs';
 import { Api, Audience, audienceLabel, isAudience } from '../core/api';
 import { NavState } from '../core/nav';
 import { Picto, Chevron, pictoFor } from '../ui/picto';
-import { Listen } from '../ui/listen';
+import { ReadCard } from '../ui/read-card';
+import { Spoken } from '../ui/spoken';
 
 @Component({
-  imports: [RouterLink, Picto, Chevron, Listen],
+  imports: [RouterLink, Picto, Chevron, ReadCard, Spoken],
   template: `
     <div class="page stack-lg">
       <p class="crumb">{{ label() }}</p>
       <section class="stack">
-        <h1 id="topics">Выберите тему</h1>
-        <twc-listen [text]="'Выберите тему. ' + titles()" />
+        <h1 id="topics"><twc-spoken text="Выберите тему" /></h1>
+        <a class="btn btn--primary btn--block" routerLink="/instructions" [queryParams]="{ audience: audience() }">
+          <twc-picto key="book" /><twc-spoken text="Пошаговые инструкции" />
+        </a>
       </section>
 
       @if (tree.isLoading()) {
@@ -28,9 +31,9 @@ import { Listen } from '../ui/listen';
       } @else {
         <div class="stack" role="list" aria-labelledby="topics">
           @for (n of tree.value(); track n.id) {
+            <div class="sound-card" role="listitem">
             <a
               class="tile tile--{{ n.kind }}"
-              role="listitem"
               [routerLink]="['/', audience(), n.id]"
             >
               <span class="tile__icon">
@@ -40,9 +43,11 @@ import { Listen } from '../ui/listen';
                   <twc-picto [key]="picto(n)" />
                 }
               </span>
-              <span class="tile__label">{{ n.title }}</span>
+              <span class="tile__label"><twc-spoken [text]="n.title" /></span>
               <twc-chevron />
             </a>
+            <twc-card-sound [label]="n.title" />
+            </div>
           } @empty {
             <p class="status">Темы пока не добавлены.</p>
           }
@@ -74,8 +79,5 @@ export class Topics {
 
   protected readonly tree = this.api.scenarios(this.audience);
   protected readonly label = computed(() => audienceLabel(this.audience()));
-  protected readonly titles = computed(() =>
-    (this.tree.hasValue() ? this.tree.value() : []).map((n) => n.title).join('. '),
-  );
   protected readonly picto = pictoFor;
 }

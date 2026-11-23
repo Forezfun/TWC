@@ -1,108 +1,79 @@
-import { Component, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { Component, computed, inject, signal } from '@angular/core';
 import { AdminApi, errorText } from '../../core/admin-api';
+import { SiteDisplaySettings } from './site-display-settings';
+
+const fields = [
+  { key: 'welcome_text', label: 'Приветствие', hint: 'Показывается на экране выбора роли.' },
+  { key: 'registration_open', label: 'Запись на консультацию', hint: 'Управляет доступом к форме записи.' },
+] as const;
 
 @Component({
-  imports: [FormsModule],
+  imports: [SiteDisplaySettings],
   template: `
-    <p class="muted">
-      Тексты, ссылки и контакты, которые показывает сайт. Сохраняется каждая строка отдельно.
-    </p>
+    <h2>Настройки сайта</h2>
     @if (message()) {
-      <p [class]="'notice ' + (messageOk() ? 'notice--ok' : 'notice--err')">{{ message() }}</p>
+      <p class="notice" [class.notice--ok]="!failed()" [class.notice--err]="failed()" [attr.role]="failed() ? 'alert' : 'status'">{{ message() }}</p>
     }
-    <div class="stack">
-      @for (s of list.value(); track s.key) {
-        <div class="card form-grid">
-          <div>
-            <strong>{{ s.key }}</strong>
-            <p class="muted" style="font-size:.9rem">{{ s.description || hints[s.key] || '' }}</p>
+    <twc-site-display-settings />
+    @if (list.isLoading()) {
+      <p role="status">Загружаем настройки…</p>
+    } @else if (list.error()) {
+      <p role="alert">Не удалось загрузить настройки.</p>
+      <button type="button" class="btn btn--secondary" (click)="list.reload()">Повторить</button>
+    } @else {
+      <div class="stack">
+        @for (setting of settings(); track setting.key) {
+          <div class="card form-grid">
+            <div>
+              <strong>{{ setting.label }}</strong>
+              <p class="muted">{{ setting.hint }}</p>
+            </div>
+            <div class="stack">
+              @if (setting.key === 'registration_open') {
+                <select #value class="input" [value]="setting.value" [attr.aria-label]="setting.label"
+                  [disabled]="saving()" (change)="save(setting.key, value.value)">
+                  <option value="true" [selected]="setting.value === 'true'">Запись открыта</option>
+                  <option value="false" [selected]="setting.value === 'false'">Запись закрыта</option>
+                </select>
+              } @else {
+                <textarea #value class="input" rows="2" [value]="setting.value" [attr.aria-label]="setting.label"
+                  [disabled]="saving()"></textarea>
+                <button type="button" class="btn btn--secondary btn--sm" [disabled]="saving()"
+                  (click)="save(setting.key, value.value)">Сохранить</button>
+              }
+            </div>
           </div>
-          <div class="stack">
-            @if (s.key === 'registration_open') {
-              <select
-                class="input"
-                [ngModel]="s.value"
-                (ngModelChange)="save(s.key, $event)"
-                [attr.aria-label]="s.key"
-              >
-                <option value="true">Запись открыта</option>
-                <option value="false">Запись закрыта</option>
-              </select>
-            } @else {
-              <textarea
-                class="input"
-                rows="2"
-                [ngModel]="s.value"
-                #t
-                [attr.aria-label]="s.key"
-              ></textarea>
-              <button
-                type="button"
-                class="btn btn--secondary btn--sm"
-                (click)="save(s.key, t.value)"
-              >
-                Сохранить
-              </button>
-            }
-          </div>
-        </div>
-      }
-      <form
-        class="card form-grid"
-        (ngSubmit)="save(newKey, newValue, newDesc); newKey = ''; newValue = ''; newDesc = ''"
-        novalidate
-      >
-        <label class="field"
-          ><span>Новый ключ</span
-          ><input
-            class="input"
-            [(ngModel)]="newKey"
-            name="key"
-            pattern="[a-z0-9_]+"
-            placeholder="например, phone"
-        /></label>
-        <label class="field"
-          ><span>Описание</span><input class="input" [(ngModel)]="newDesc" name="desc"
-        /></label>
-        <label class="field span2"
-          ><span>Значение</span
-          ><textarea class="input" rows="2" [(ngModel)]="newValue" name="value"></textarea>
-        </label>
-        <button type="submit" class="btn btn--primary" [disabled]="!newKey">
-          Добавить настройку
-        </button>
-      </form>
-    </div>
+        }
+      </div>
+    }
   `,
 })
 export class AdminSettings {
   private readonly api = inject(AdminApi);
   protected readonly list = this.api.settings();
-  protected readonly message = signal<string | null>(null);
-  protected readonly messageOk = signal(true);
-  protected newKey = '';
-  protected newValue = '';
-  protected newDesc = '';
-  protected readonly hints: Record<string, string> = {
-    welcome_text: 'Приветствие на главном экране',
-    donate_url: 'Ссылка на страницу пожертвований',
-    donate_message: 'Сообщение перед переходом к пожертвованию',
-    coordinator_contact: 'Контакт координатора (телефон, Telegram)',
-    registration_open: 'Открыта ли запись на консультацию',
-  };
+  protected readonly message = signal('');
+  protected readonly failed = signal(false);
+  protected readonly saving = signal(false);
+  protected readonly settings = computed(() => fields.map((field) => {
+    const saved = this.list.hasValue() ? this.list.value().find((item) => item.key === field.key) : undefined;
+    return { ...field, value: saved?.value ?? (field.key === 'registration_open' ? 'true' : '') };
+  }));
 
-  protected save(key: string, value: string, description?: string): void {
-    if (!key) return;
-    this.api.saveSetting(key, value, description || undefined).subscribe({
+  protected save(key: string, value: string): void {
+    if (this.saving()) return;
+    this.saving.set(true);
+    this.api.saveSetting(key, value).subscribe({
       next: () => {
-        this.message.set(`Сохранено: ${key}`);
-        this.messageOk.set(true);
+        this.message.set('Настройка сохранена.');
+        this.failed.set(false);
+        this.saving.set(false);
         this.list.reload();
       },
-      error: (e: unknown) => {
-        this.message.set(errorText(e));
-        this.messageOk.set(false);
+      error: (error: unknown) => {
+        this.message.set(errorText(error));
+        this.failed.set(true);
+        this.saving.set(false);
+        this.list.reload();
       },
     });
   }

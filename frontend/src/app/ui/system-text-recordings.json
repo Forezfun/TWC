@@ -1,0 +1,20 @@
+{
+  "Повседневные дела, общение, безопасность": "roles-self-hint",
+  "Обучение, поведение, помощь, поддержка": "roles-parents-hint",
+  "Методики, адаптация занятий, общение": "roles-specialists-hint",
+  "Повседневные дела": "topics-everyday",
+  "Оставить номер для обратного звонка": "callback-description",
+  "Проверьте цифры. Номер остался в поле.": "callback-phone-error",
+  "Учебная заявка сохранена": "callback-demo-saved",
+  "Заполните форму. Сотрудник «Колибри» свяжется с вами и подтвердит время.": "consult-description",
+  "Как вас зовут?": "consult-name",
+  "Как с вами связаться?": "consult-contact",
+  "Для кого консультация?": "consult-audience",
+  "Когда вам удобно?": "consult-time",
+  "Удобное время словами": "consult-preferred-time",
+  "Проверьте данные": "consult-confirm-title",
+  "Запись на консультацию закрыта": "consult-closed",
+  "Тестовая заявка сохранена": "consult-demo-saved",
+  "Сотрудник не получит эту заявку.": "consult-demo-description",
+  "Можно повторить шаги или закрыть предпросмотр.": "scenario-preview-complete-description"
+}

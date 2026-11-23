@@ -14,6 +14,7 @@ class AdminOut(BaseModel):
     email: str
     name: str
     is_active: bool
+    is_archived: bool = False
     created_at: datetime
 
 

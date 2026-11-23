@@ -3,6 +3,22 @@ server {
     listen [::]:80 default_server;
     server_name _;
 
+    location = /api/admin/pictograms/import {
+        client_max_body_size 16m;
+        proxy_pass http://127.0.0.1:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location = /api/admin/instruction-media {
+        client_max_body_size 8m;
+        proxy_pass http://127.0.0.1:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
     # Backend API remains private and is available externally only through /api/.
     location /api/ {
         proxy_pass http://127.0.0.1:3000;

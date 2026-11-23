@@ -1,148 +1,63 @@
-<div class="app">
-  <header class="topbar" [class.topbar--wide]="isAdmin()">
+<div class="app" [class.public-app]="!isAdmin()" [class.admin-app]="isAdmin()">
+  <header class="topbar">
     <div class="topbar__inner">
-      <a class="brand" routerLink="/" aria-label="На главную">
-        <span class="brand__logo" aria-hidden="true">
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M3 12c4-1 7-5 9-9 1 4 4 7 8 8-3 1-5 3-6 6-1-3-4-5-7-5 2-1 3-3 3-5" />
-            <path d="M12 21v-6" />
-          </svg>
-        </span>
-        <span>
-          <span class="brand__name">Колибри</span><br />
-          <span class="brand__sub">Навигатор помощи</span>
-        </span>
+      <a class="brand" routerLink="/sections" aria-label="Колибри, к разделам">
+        <img class="brand__art" ngSrc="/kolibri/logo.svg" width="112" height="47" priority alt="" />
       </a>
-      @if (isAdmin()) {
-        <span class="pill">Админка</span>
-      } @else {
-        <button
-          type="button"
-          class="btn btn--secondary"
-          (click)="toggleSettings()"
-          [attr.aria-expanded]="settingsOpen()"
-          aria-controls="settings-panel"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
-          >
-            <circle cx="12" cy="12" r="3" />
-            <path
-              d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"
-            />
-          </svg>
-          Настройки
-        </button>
+      @if (!isAdmin()) {
+        <div class="header-actions">
+          <a class="btn btn--ghost header-icon" routerLink="/intro" aria-label="Как пользоваться" title="Как пользоваться">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.7M12 17h.01"/></svg>
+          </a>
+          <a class="btn btn--ghost header-icon" routerLink="/preferences" [queryParams]="{ return: url() }" aria-label="Настройки" title="Настройки">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="8" cy="6" r="2" fill="white"/><circle cx="16" cy="12" r="2" fill="white"/><circle cx="10" cy="18" r="2" fill="white"/></svg>
+          </a>
+        </div>
       }
     </div>
-    @if (settingsOpen() && !isAdmin()) {
-      <div id="settings-panel" class="topbar__inner settings">
-        <div>
-          <p><strong>Размер текста</strong></p>
-          <div class="seg" role="group" aria-label="Размер текста">
-            @for (s of sizes; track s.key) {
-              <button
-                type="button"
-                class="btn btn--secondary"
-                [attr.aria-pressed]="prefs.textSize() === s.key"
-                (click)="prefs.textSize.set(s.key)"
-              >
-                {{ s.label }}
-              </button>
-            }
-          </div>
-        </div>
-        <div>
-          <p><strong>Озвучка текста</strong></p>
-          <div class="seg" role="group" aria-label="Озвучка">
-            <button
-              type="button"
-              class="btn btn--secondary"
-              [attr.aria-pressed]="prefs.sound()"
-              (click)="prefs.sound.set(true)"
-            >
-              Включена
-            </button>
-            <button
-              type="button"
-              class="btn btn--secondary"
-              [attr.aria-pressed]="!prefs.sound()"
-              (click)="prefs.sound.set(false)"
-            >
-              Выключена
-            </button>
-          </div>
-          <p class="field__hint">Звук включается только по нажатию кнопки «Прослушать».</p>
-        </div>
-        <button type="button" class="btn btn--primary" (click)="toggleSettings()">Готово</button>
-      </div>
-    }
   </header>
 
-  <main class="app__main">
+  <main class="app__main" id="main-content" aria-label="Содержание">
     <router-outlet />
   </main>
 
-  @if (!isHome() && !isAdmin()) {
-    <nav class="navbar" aria-label="Навигация по разделам">
+  @if (!isAdmin()) {
+    <ng-container [ngTemplateOutlet]="supportTemplate()" />
+    @if (prefs.sound()) {
+    <div class="page-audio" aria-label="Озвучка страницы">
+      @if (speech.playing()) {
+        <button type="button" class="btn btn--primary" aria-label="Стоп" title="Стоп" (click)="speech.stop()">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="1" /></svg>
+        </button>
+        <button type="button" class="btn btn--secondary" aria-label="Заново" title="Заново" (click)="speech.restart()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4v6h6M4.25 15a8 8 0 1 0 1.9-8.3L3 10" /></svg>
+        </button>
+      } @else {
+        <button type="button" data-page-audio class="btn audio-button" (click)="speech.playPage()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10v4h4l5 4V6L8 10zM16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11" /></svg>
+          Прослушать страницу
+        </button>
+      }
+      @if (speech.message()) {
+        <p class="audio-message" role="status">{{ speech.message() }} <a routerLink="/preferences" [queryParams]="{ return: url() }">Настройки</a></p>
+      }
+    </div>
+    }
+    <div class="public-actions" [class.has-actions]="!!dockTemplate()">
+      <ng-container [ngTemplateOutlet]="dockTemplate()" />
+    </div>
+    <nav class="navbar" aria-label="Навигация">
       <div class="navbar__inner">
-        <button type="button" class="btn btn--secondary" (click)="back()">
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M15 6l-6 6 6 6" />
-          </svg>
+        <button type="button" class="btn btn--ghost" (click)="back()" [disabled]="path() === '/' && !nav.backAction()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5m7 7-7-7 7-7"/></svg>
           Назад
         </button>
-        <a class="btn btn--secondary" [routerLink]="topicsLink()">
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
-          >
-            <rect x="4" y="4" width="7" height="7" rx="1.5" />
-            <rect x="13" y="4" width="7" height="7" rx="1.5" />
-            <rect x="4" y="13" width="7" height="7" rx="1.5" />
-            <rect x="13" y="13" width="7" height="7" rx="1.5" />
-          </svg>
-          К темам
+        <a class="btn btn--ghost" routerLink="/sections">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v9a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg>
+          Домой
         </a>
-        <a class="btn btn--secondary" routerLink="/help">
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
-          >
-            <circle cx="12" cy="12" r="9" />
-            <path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.7M12 17h.01" />
-          </svg>
+        <a class="btn btn--ghost" routerLink="/help" [queryParams]="helpLink()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v12H9l-5 3zM8 9h8m-8 4h5"/></svg>
           Помощь
         </a>
       </div>

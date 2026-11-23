@@ -14,15 +14,19 @@ export class Prefs {
 
   readonly textSize = signal<TextSize>('md');
   readonly sound = signal(true);
+  readonly warm = signal(false);
+  readonly onboarded = signal(false);
 
   constructor() {
     if (this.isBrowser) {
       try {
         const raw = localStorage.getItem(KEY);
         if (raw) {
-          const saved = JSON.parse(raw) as { textSize?: TextSize; sound?: boolean };
+          const saved = JSON.parse(raw) as { textSize?: TextSize; sound?: boolean; warm?: boolean; onboarded?: boolean };
           if (saved.textSize) this.textSize.set(saved.textSize);
           if (typeof saved.sound === 'boolean') this.sound.set(saved.sound);
+          this.warm.set(saved.warm === true);
+          this.onboarded.set(saved.onboarded === true);
         }
       } catch {
         /* localStorage недоступен — работаем со значениями по умолчанию */
@@ -31,12 +35,15 @@ export class Prefs {
     effect(() => {
       const size = this.textSize();
       const sound = this.sound();
+      const warm = this.warm();
+      const onboarded = this.onboarded();
       const root = this.doc.documentElement;
+      root.classList.toggle('warm-background', warm);
       root.classList.toggle('text-lg', size === 'lg');
       root.classList.toggle('text-xl', size === 'xl');
       if (this.isBrowser) {
         try {
-          localStorage.setItem(KEY, JSON.stringify({ textSize: size, sound }));
+          localStorage.setItem(KEY, JSON.stringify({ textSize: size, sound, warm, onboarded }));
         } catch {
           /* ignore */
         }
