@@ -6,13 +6,23 @@ After=network.target
 Type=simple
 User=twc
 Group=twc
-WorkingDirectory=/opt/twc/frontend
+# /opt/twc/current — ссылка на активный релиз, её переключает deploy/bin/deploy.sh.
+WorkingDirectory=/opt/twc/current/frontend
 Environment=NODE_ENV=production
 Environment=PORT=4000
+Environment=NODE_OPTIONS=--max-old-space-size=192
 EnvironmentFile=-/etc/twc/frontend.env
-ExecStart=/usr/bin/node /opt/twc/frontend/dist/twc/server/server.mjs
+# --preserve-symlinks-main: без него server.mjs не считает себя главным модулем
+# при запуске через ссылку current и сразу завершается.
+ExecStart=/usr/local/bin/node --preserve-symlinks-main /opt/twc/current/frontend/dist/twc/server/server.mjs
 Restart=on-failure
 RestartSec=5
+MemoryHigh=260M
+MemoryMax=320M
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
 
 [Install]
 WantedBy=multi-user.target

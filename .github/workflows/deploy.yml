@@ -1,0 +1,78 @@
+name: Deploy
+
+# Выкладка на VPS после каждого push в main: фронтенд собирается здесь,
+# готовый архив уходит на сервер, где deploy/bin/deploy.sh ставит зависимости
+# backend, переключает релиз, проверяет сервисы и откатывается при ошибке.
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  DEPLOY_HOST: twc.intexcor.ru
+  DEPLOY_USER: twc
+  # Публичный ключ SSH-сервера (ssh-keyscan -t ed25519 <host>). Менять при переезде.
+  DEPLOY_HOST_KEY: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIfc/FL0BlrsQTOlDLRpsaO4uNjnTBjPy3kHluEWYMBT
+  SITE_URL: https://twc.intexcor.ru:9443
+
+jobs:
+  deploy:
+    name: Build and deploy
+    runs-on: ubuntu-latest
+    # В форках секрета нет, там выкладка не нужна.
+    if: github.repository == 'Forezfun/TWC'
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24.18.0'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build Angular SSR application
+        working-directory: frontend
+        run: npm run build
+
+      - name: Package release
+        run: |
+          tar --exclude='.venv' --exclude='__pycache__' --exclude='backend/tests' --exclude='.env' \
+            -czf "$RUNNER_TEMP/release.tgz" backend shared frontend/dist
+          ls -lh "$RUNNER_TEMP/release.tgz"
+
+      - name: Deploy to VPS
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          if [ -z "$DEPLOY_SSH_KEY" ]; then
+            echo "::error::Не задан секрет DEPLOY_SSH_KEY (Settings → Secrets and variables → Actions)"
+            exit 1
+          fi
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s %s\n' "$DEPLOY_HOST" "$DEPLOY_HOST_KEY" > ~/.ssh/known_hosts
+          # Ключ на сервере привязан к deploy.sh: аргумент — ревизия, stdin — архив.
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o BatchMode=yes \
+            "$DEPLOY_USER@$DEPLOY_HOST" "$GITHUB_SHA" < "$RUNNER_TEMP/release.tgz"
+
+      - name: Check public site
+        run: |
+          curl -fsS --retry 5 --retry-delay 3 -o /dev/null "$SITE_URL/api/health"
+          curl -fsS --retry 5 --retry-delay 3 -o /dev/null "$SITE_URL/"

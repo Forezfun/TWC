@@ -51,62 +51,64 @@ Workflow `.github/workflows/frontend-ci.yml` запускается для из�
 
 Тесты и линтер можно добавить отдельными шагами после их настройки в проекте.
 
-## Развёртывание frontend на VPS
+## Развёртывание на VPS
 
-Предполагаемое расположение репозитория на сервере — `/opt/twc`. Для приватного
-репозитория серверу предварительно потребуется read-only deploy key.
+Стенд: https://twc.intexcor.ru:9443 (временный; порт 9443, потому что 443 на этом
+сервере занят). Админка — `/admin`.
 
-```bash
-cd /opt/twc
-git pull --ff-only
-cd frontend
-npm ci
-npm run build
-```
+### Автовыкладка
 
-После первой сборки:
+Workflow `.github/workflows/deploy.yml` запускается при каждом push в `main`
+(и вручную через «Run workflow»):
 
-1. скопировать `deploy/systemd/twc-frontend.service.example` в
-   `/etc/systemd/system/twc-frontend.service`;
-2. проверить пользователя, путь к репозиторию и путь к Node.js (`which node`);
-3. создать `/etc/twc/frontend.env`, подставив публичный IP или домен VPS:
+1. собирает Angular SSR в GitHub Actions — на сервере сборка не выполняется;
+2. упаковывает `backend/`, `shared/` и `frontend/dist/` в архив;
+3. передаёт архив по SSH скрипту `deploy/bin/deploy.sh`;
+4. проверяет, что сайт и `/api/health` отвечают снаружи.
+
+Скрипт на сервере распаковывает архив в `/opt/twc/releases/<дата>-<ревизия>`,
+ставит зависимости backend (`uv sync --frozen --no-dev`), переключает ссылку
+`/opt/twc/current`, перезапускает сервисы и ждёт ответа от обоих. Если сервисы
+не поднялись, он возвращает предыдущий релиз и завершает workflow с ошибкой.
+Хранятся два последних релиза. Миграции Alembic применяет `twc-backend` при старте.
+
+Для работы нужен один секрет репозитория (Settings → Secrets and variables →
+Actions): `DEPLOY_SSH_KEY` — приватный SSH-ключ выкладки. Его публичная часть на
+сервере привязана к `deploy.sh` и не даёт доступа к оболочке. Адрес сервера и его
+публичный ключ заданы в `env` самого workflow — при переезде меняются там.
+
+### Устройство сервера
+
+- пользователь `twc`, каталог `/opt/twc` (`releases/`, ссылка `current`);
+- `/usr/local/bin/twc-deploy` — копия `deploy/bin/deploy.sh`, владелец root;
+- systemd-сервисы из `deploy/systemd/*.service.example`: backend на
+  `127.0.0.1:3000`, frontend на `127.0.0.1:4000`, с ограничением памяти;
+- `/etc/twc/backend.env` — `DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGINS`
+  (см. `backend/.env.example`);
+- `/etc/twc/frontend.env`:
 
 ```dotenv
-NG_ALLOWED_HOSTS=localhost,127.0.0.1,PUBLIC_IP_OR_DOMAIN
+NG_ALLOWED_HOSTS=localhost,127.0.0.1,ДОМЕН
 NG_TRUST_PROXY_HEADERS=x-forwarded-for,x-forwarded-proto
+API_BASE_URL=http://127.0.0.1:3000
 ```
 
-Не следует указывать `NG_ALLOWED_HOSTS=*`: точный список защищает SSR-сервер от
-подмены заголовка `Host` и SSRF-атак.
+  Не следует указывать `NG_ALLOWED_HOSTS=*`: точный список защищает SSR-сервер от
+  подмены заголовка `Host` и SSRF-атак.
+- `twc` может через sudo только перезапускать `twc-backend` и `twc-frontend`;
+- обратный прокси: `/api/` → backend, остальное → frontend. Примеры —
+  `deploy/caddy/Caddyfile.example` и `deploy/nginx/twc.conf.example`.
 
-4. выполнить:
+Node.js на сервере нужен только для запуска SSR (версия из раздела Frontend),
+Python 3.12 и `uv` — для backend. Порты `3000` и `4000` наружу не открываются.
+
+### Ручные операции
 
 ```bash
-sudo systemctl daemon-reload
-sudo systemctl enable --now twc-frontend
-sudo systemctl status twc-frontend
+journalctl -u twc-backend -u twc-frontend -n 100     # логи
+sudo systemctl restart twc-backend twc-frontend      # перезапуск
+cat /opt/twc/current/REVISION                        # какая ревизия выложена
 ```
 
-## Развёртывание backend на VPS
-
-```bash
-cd /opt/twc/backend
-uv sync --no-dev
-sudo cp ../deploy/systemd/twc-backend.service.example /etc/systemd/system/twc-backend.service
-sudo nano /etc/twc/backend.env
-sudo systemctl daemon-reload
-sudo systemctl enable --now twc-backend
-```
-
-Миграции применяются автоматически при старте сервиса.
-В `/etc/twc/backend.env` задайте `DATABASE_URL`, `JWT_SECRET` и `CORS_ORIGINS`
-(см. `backend/.env.example`).
-
-Для внешнего доступа пример `deploy/nginx/twc.conf.example` направляет:
-
-- запросы `/api/` на backend по адресу `127.0.0.1:3000`;
-- остальные запросы на Angular SSR по адресу `127.0.0.1:4000`.
-
-На firewall публично открываются только SSH и порты Nginx (`22`, `80`, `443`).
-Порты `3000` и `4000` должны оставаться закрытыми для внешних подключений.
-Без домена приложение можно открыть по HTTP через публичный IP-адрес VPS.
+Первого сотрудника админки создаёт `python -m app.create_admin EMAIL` из
+`/opt/twc/current/backend` с переменными из `/etc/twc/backend.env`.

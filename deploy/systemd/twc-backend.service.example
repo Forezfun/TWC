@@ -6,12 +6,20 @@ After=network.target postgresql.service
 Type=simple
 User=twc
 Group=twc
-WorkingDirectory=/opt/twc/backend
+# /opt/twc/current — ссылка на активный релиз, её переключает deploy/bin/deploy.sh.
+WorkingDirectory=/opt/twc/current/backend
 EnvironmentFile=/etc/twc/backend.env
-ExecStartPre=/opt/twc/backend/.venv/bin/alembic upgrade head
-ExecStart=/opt/twc/backend/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 3000 --workers 2
+ExecStartPre=/opt/twc/current/backend/.venv/bin/alembic upgrade head
+ExecStart=/opt/twc/current/backend/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 3000 --workers 1 --proxy-headers --forwarded-allow-ips 127.0.0.1
 Restart=on-failure
 RestartSec=5
+# Сервер делит память с другими сервисами: ограничиваем и не даём привилегий.
+MemoryHigh=200M
+MemoryMax=260M
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
 
 [Install]
 WantedBy=multi-user.target
