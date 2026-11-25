@@ -22,7 +22,7 @@ env:
   DEPLOY_USER: twc
   # Публичный ключ SSH-сервера (ssh-keyscan -t ed25519 <host>). Менять при переезде.
   DEPLOY_HOST_KEY: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIfc/FL0BlrsQTOlDLRpsaO4uNjnTBjPy3kHluEWYMBT
-  SITE_URL: https://twc.intexcor.ru:9443
+  SITE_URL: https://twc.intexcor.ru
 
 jobs:
   deploy:

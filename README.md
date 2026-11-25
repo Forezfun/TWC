@@ -53,8 +53,7 @@ Workflow `.github/workflows/frontend-ci.yml` запускается для из�
 
 ## Развёртывание на VPS
 
-Стенд: https://twc.intexcor.ru:9443 (временный; порт 9443, потому что 443 на этом
-сервере занят). Админка — `/admin`.
+Стенд: https://twc.intexcor.ru (временный). Админка — `/admin`.
 
 ### Автовыкладка
 
