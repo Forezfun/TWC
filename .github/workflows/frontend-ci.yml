@@ -21,7 +21,7 @@ concurrency:
 
 jobs:
   build:
-    name: Install and build
+    name: Install, test and build
     runs-on: ubuntu-latest
 
     defaults:
@@ -45,6 +45,9 @@ jobs:
           # скачать сборку под CUDA и падает с 404. Для сборки сайта она не нужна.
           ONNXRUNTIME_NODE_INSTALL_CUDA: skip
         run: npm ci
+
+      - name: Run unit tests
+        run: npm test -- --watch=false
 
       - name: Build Angular SSR application
         run: npm run build
