@@ -21,7 +21,7 @@ env:
   DEPLOY_HOST: twc.intexcor.ru
   DEPLOY_USER: twc
   # Публичный ключ SSH-сервера (ssh-keyscan -t ed25519 <host>). Менять при переезде.
-  DEPLOY_HOST_KEY: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIfc/FL0BlrsQTOlDLRpsaO4uNjnTBjPy3kHluEWYMBT
+  DEPLOY_HOST_KEY: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEqMRofisqqSMUtY26KWCsUnTGezZShZFxPHyAAw6IXy
   SITE_URL: https://twc.intexcor.ru
 
 jobs:
@@ -44,6 +44,10 @@ jobs:
 
       - name: Install dependencies
         working-directory: frontend
+        env:
+          # onnxruntime-node (зависимость @huggingface/transformers) на Linux пытается
+          # скачать сборку под CUDA и падает с 404. Для сборки сайта она не нужна.
+          ONNXRUNTIME_NODE_INSTALL_CUDA: skip
         run: npm ci
 
       - name: Build Angular SSR application
