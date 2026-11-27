@@ -609,6 +609,18 @@ html:has(.admin-app) { font-size: 15px; }
 .admin-app .btn--ghost:hover:not(:disabled) { color: var(--primary); }
 .admin-app .input { padding: 8px 10px; }
 .admin-app textarea.input { min-height: 5.5rem; line-height: 1.5; }
+/* Подпись поля — единый вид: над полем, с отступом. */
+.admin-app label.field {
+  display: grid;
+  gap: 5px;
+  align-content: start;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--heading);
+}
+.admin-app label.field > .input { font-size: 1rem; font-weight: 400; color: var(--text); }
+.admin-app .admin h2 { margin-block: 0 14px; font-size: 1.35rem; }
+.admin-app .admin h3 { margin-block: 0 10px; font-size: 1.1rem; }
 .admin-app .table th {
   background: #edf1f4;
   color: var(--muted);

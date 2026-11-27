@@ -23,7 +23,8 @@
 .constructor-title strong { min-width: 0; overflow-wrap: anywhere; }
 .history-actions { display: inline-flex; gap: 6px; }
 .history-arrow { min-inline-size: 44px; min-block-size: 44px; }
-.history-arrow span { font-size: 1.4rem; line-height: 1; }
+.history-arrow { padding: 0; }
+.add-topic { justify-self: start; align-self: start; }
 @media (min-width: 1160px) {
   .constructor-bar {
     display: grid;
@@ -127,3 +128,6 @@ summary { cursor: pointer; font-weight: 600; }
   .answer-arrow { display: none; }
   .step-sidebar { max-height: 220px; overflow: auto; border-right: 0; border-bottom: 1px solid var(--editor-line); }
 }
+
+.admin-head { margin-block-end: 14px; }
+.admin-head h2 { margin: 0; }

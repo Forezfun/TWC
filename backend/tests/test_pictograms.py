@@ -64,3 +64,18 @@ async def test_import_rejects_invalid_image_without_creating_set(admin, bundle):
     assert (await admin.post(import_path, json=bundle)).status_code == 422
     library = (await admin.get(library_path)).json()
     assert all(row["title"] != bundle["title"] for row in library["sets"])
+
+
+async def test_library_is_revalidated_by_etag(admin, bundle):
+    first = await admin.get(library_path)
+    etag = first.headers["etag"]
+    assert first.headers["cache-control"] == "private, no-cache"
+
+    unchanged = await admin.get(library_path, headers={"If-None-Match": etag})
+    assert unchanged.status_code == 304
+    assert not unchanged.content
+
+    assert (await admin.post(import_path, json=bundle)).status_code < 300
+    changed = await admin.get(library_path, headers={"If-None-Match": etag})
+    assert changed.status_code == 200
+    assert changed.headers["etag"] != etag

@@ -58,7 +58,7 @@ import { RequestVoiceAnswers } from './request-voice-answers';
         </div>
       </details>
       <label class="field">
-        <span>Специалист</span>
+        <span class="visually-hidden">Специалист</span>
         <select #scope class="input" [value]="mine() ? 'mine' : 'all'" (change)="mine.set(scope.value === 'mine')">
           <option value="all">Все заявки</option>
           <option value="mine">Записи ко мне</option>

@@ -118,7 +118,7 @@ def title_key(title: str) -> str:
 
 
 @router.get("/admin/pictograms", dependencies=admin)
-async def library(session: Session):
+async def library(request: Request, session: Session):
     sets, pictograms = built_in_catalog()
     rows = (await session.scalars(select(PictogramSet).order_by(PictogramSet.title))).all()
     saved = await session.get(PictogramSelection, 1)
@@ -126,11 +126,20 @@ async def library(session: Session):
         {"set_id": saved.set_id, "pictogram_ids": saved.pictogram_ids}
         if saved else {"set_id": sets[0]["id"], "pictogram_ids": sets[0]["pictogram_ids"]}
     )
-    return {
+    body = json.dumps({
         "sets": [*sets, *(describe_set(row.id, row.title, row.pictograms) for row in rows)],
         "pictograms": [*pictograms, *(p for row in rows for p in row.pictograms)],
         "selection": selection,
+    }, ensure_ascii=False, separators=(",", ":")).encode()
+    # Каталог весит несколько мегабайт и меняется редко: браузер перепроверяет
+    # его по ETag и при совпадении получает пустой ответ 304.
+    headers = {
+        "ETag": f'W/"{hashlib.sha256(body).hexdigest()[:32]}"',
+        "Cache-Control": "private, no-cache",
     }
+    if request.headers.get("if-none-match") == headers["ETag"]:
+        return Response(status_code=304, headers=headers)
+    return Response(body, media_type="application/json", headers=headers)
 
 
 @router.put("/admin/pictograms", dependencies=admin)

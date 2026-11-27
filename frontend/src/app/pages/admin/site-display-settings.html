@@ -9,25 +9,30 @@
       <h3 id="display-roles">Роли на сайте</h3>
       @for (role of draft().roles; track role.key; let i = $index) {
         <fieldset class="role-editor stack" [disabled]="busy()">
-          <legend>{{ role.title || 'Новая роль' }}</legend>
-          <div class="display-actions">
+          <legend class="visually-hidden">{{ role.title || 'Новая роль' }}</legend>
+          <div class="editor-head">
             <span class="role-icon"><twc-role-pictogram [roleKey]="role.key" [url]="role.icon_url ?? null" [size]="24" /></span>
-            <button type="button" class="btn btn--secondary btn--sm"
-              (click)="pictogramRole.set(role.key); picker.open(role.icon_url)">Изменить пиктограмму</button>
-            <button type="button" class="btn btn--secondary btn--sm" (click)="toggleVisibility(role)">
-              {{ role.is_hidden ? 'Показать в боте' : 'Скрыть роль' }}
-            </button>
-            @if (role.is_hidden) { <span class="muted">Скрыта в боте</span> }
-            <button type="button" class="btn btn--danger btn--sm" (click)="removeRole(role)">Удалить роль</button>
+            <strong class="editor-title" aria-hidden="true">{{ role.title || 'Новая роль' }}</strong>
+            @if (role.is_hidden) { <span class="badge badge--off">Скрыта на сайте</span> }
+            <div class="display-actions editor-head__actions">
+              <button type="button" class="btn btn--secondary btn--sm"
+                (click)="pictogramRole.set(role.key); picker.open(role.icon_url)">Изменить пиктограмму</button>
+              <button type="button" class="btn btn--secondary btn--sm" (click)="toggleVisibility(role)">
+                {{ role.is_hidden ? 'Показать на сайте' : 'Скрыть роль' }}
+              </button>
+              <button type="button" class="btn btn--danger btn--sm" (click)="removeRole(role)">Удалить роль</button>
+            </div>
           </div>
+          <div class="role-fields">
           @for (field of roleFields; track field.text) {
+            <div class="role-field">
             <label class="field">{{ field.label }}
               <input class="input" [attr.maxlength]="field.limit" [required]="field.text === 'title'"
                 [ngModel]="role[field.text]" [name]="field.text + '-' + i"
                 (ngModelChange)="editRole(role.key, field.text, $event)" />
             </label>
-            <div class="role-audio stack">
-              <strong>{{ field.audioLabel }}</strong>
+            <div class="role-audio">
+              <span class="role-audio__label">{{ field.audioLabel }}</span>
               <div class="display-actions">
                 <label class="btn btn--secondary btn--sm file-button">
                   <span>Загрузить аудио</span>
@@ -46,26 +51,24 @@
                 }
               </div>
             </div>
+            </div>
           }
+          </div>
         </fieldset>
       }
       <div class="display-actions">
         <button type="button" class="btn btn--secondary" [disabled]="busy() || draft().roles.length >= 100"
           (click)="addRole()">Добавить роль</button>
-        <button type="submit" class="btn btn--primary" [disabled]="!canSave()"
-          (click)="messageArea.set('roles')">Сохранить роли и кнопки</button>
         @if (hasNewRole()) {
           <p class="muted">После сохранения новые роли появятся в меню и редакторе сценариев.</p>
         }
-        @if (message() && messageArea() === 'roles') {
-          <p class="notice" [class.notice--err]="failed()" [class.notice--ok]="!failed()"
-            [attr.role]="failed() ? 'alert' : 'status'">{{ message() }}</p>
-        }
       </div>
-      <h3>Кнопки в сценариях</h3>
+      <h3 class="section-title">Кнопки в сценариях</h3>
+      <div class="button-editors">
       @for (kind of kinds; track kind) {
         <fieldset class="button-editor stack" [disabled]="busy()">
-          <legend>{{ names[kind] }}</legend>
+          <legend class="visually-hidden">{{ names[kind] }}</legend>
+          <strong class="editor-title" aria-hidden="true">{{ names[kind] }}</strong>
           <label class="field">Надпись
             <input class="input" maxlength="60" required [ngModel]="draft()[kind].label"
               [name]="kind + '-label'" (ngModelChange)="editButton(kind, { label: $event })" />
@@ -90,10 +93,10 @@
           </fieldset>
         </fieldset>
       }
-      <div class="display-actions">
-        <button type="submit" class="btn btn--primary" [disabled]="!canSave()"
-          (click)="messageArea.set('buttons')">Сохранить роли и кнопки</button>
-        @if (message() && messageArea() === 'buttons') {
+      </div>
+      <div class="display-actions save-bar">
+        <button type="submit" class="btn btn--primary" [disabled]="!canSave()">Сохранить роли и кнопки</button>
+        @if (message()) {
           <p class="notice" [class.notice--err]="failed()" [class.notice--ok]="!failed()"
             [attr.role]="failed() ? 'alert' : 'status'">{{ message() }}</p>
         }

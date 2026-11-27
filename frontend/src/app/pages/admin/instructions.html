@@ -27,11 +27,11 @@
         <div class="history-actions" role="group" aria-label="История изменений">
           <button type="button" class="btn btn--secondary btn--sm history-arrow"
             aria-label="Отменить действие" aria-keyshortcuts="Control+Z Meta+Z" title="Отменить действие (Ctrl+Z)"
-            [disabled]="busy() || !history().undo.length" (click)="restoreHistory('undo')"><span aria-hidden="true">↶</span></button>
+            [disabled]="busy() || !history().undo.length" (click)="restoreHistory('undo')"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5" /><path d="M4 9h10a6 6 0 0 1 0 12h-3" /></svg></button>
           <button type="button" class="btn btn--secondary btn--sm history-arrow"
             aria-label="Повторить действие" aria-keyshortcuts="Control+Y Meta+Y Control+Shift+Z Meta+Shift+Z"
             title="Повторить действие (Ctrl+Y)" [disabled]="busy() || !history().redo.length"
-            (click)="restoreHistory('redo')"><span aria-hidden="true">↷</span></button>
+            (click)="restoreHistory('redo')"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 14 5-5-5-5" /><path d="M20 9H10a6 6 0 0 0 0 12h3" /></svg></button>
         </div>
         <button type="button" class="btn btn--ghost btn--sm" (click)="check()">Проверить</button>
         <button type="button" class="btn btn--secondary btn--sm" (click)="openPreview()">Предпросмотр</button>
@@ -86,7 +86,7 @@
             slot: { scope: 'scenario', field: 'description_audio_url' }, file: item.description_audio_url, url: item.description_audio_url
           }" />
         </div>
-        <button class="btn btn--secondary btn--sm" type="button" (click)="addingTopic.set(true)">Добавить тему</button>
+        <button class="btn btn--secondary btn--sm add-topic" type="button" (click)="addingTopic.set(true)">Добавить тему</button>
       </fieldset>
     </details>
 
