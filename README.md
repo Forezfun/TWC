@@ -41,15 +41,21 @@ PORT=4000 npm run serve:ssr:twc
 Админка для сотрудников НКО — на сайте по адресу `/admin` (вход по почте и паролю,
 первого сотрудника создаёт `python -m app.create_admin`).
 
-## CI frontend
+## CI
 
-Workflow `.github/workflows/frontend-ci.yml` запускается для изменений во
-`frontend/` при push в `main` и при открытии или обновлении pull request. Он:
+Проверки запускаются при push в `main` и при открытии или обновлении pull request.
+
+`.github/workflows/frontend-ci.yml` — для изменений во `frontend/`:
 
 1. устанавливает зависимости командой `npm ci`;
-2. выполняет production-сборку Angular SSR.
+2. запускает модульные тесты (`npm test -- --watch=false`);
+3. выполняет production-сборку Angular SSR.
 
-Тесты и линтер можно добавить отдельными шагами после их настройки в проекте.
+`.github/workflows/backend-ci.yml` — для изменений в `backend/` и `shared/`:
+
+1. устанавливает зависимости (`uv sync --frozen --group dev`);
+2. проверяет код линтером `ruff`;
+3. запускает `pytest` на PostgreSQL 16 в контейнере.
 
 ## Развёртывание на VPS
 
