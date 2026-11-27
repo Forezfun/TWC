@@ -22,15 +22,26 @@ type RoleAudioField = 'audio_url' | 'hint_audio_url';
     .role-editor + .display-actions { margin-block-start: 12px; }
     .role-editor, .button-editor { margin: 0; border: 1px solid var(--line); border-radius: var(--radius);
       padding: 16px 18px; min-inline-size: 0; background: var(--white); }
-    .editor-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; }
-    .editor-head__actions { margin-inline-start: auto; }
+    .editor-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-block-end: 14px; }
+    .editor-heading { display: grid; gap: 1px; min-inline-size: 0; justify-items: start; }
+    .editor-head__actions { display: flex; gap: 4px; margin-inline-start: auto; }
     .editor-title { font-size: 1.05rem; font-weight: 650; color: var(--heading); overflow-wrap: anywhere; }
     .display-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
     .display-actions p { margin: 0; }
-    .role-fields { display: grid; gap: 16px 24px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); }
-    .role-field { display: grid; gap: 10px; align-content: start; min-inline-size: 0; }
-    .role-audio { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
-    .role-audio__label { font-size: .87rem; font-weight: 500; color: var(--muted); }
+    .link-btn { display: inline-flex; align-items: center; min-block-size: 32px; padding: 2px 8px; border: 0; border-radius: 6px;
+      background: none; color: var(--primary); font: inherit; font-size: .87rem; font-weight: 600; cursor: pointer; }
+    .link-btn:hover { background: var(--card); }
+    .link-btn:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+    .link-btn--danger { color: var(--danger); }
+    .link-btn--danger:hover { background: var(--danger-bg); }
+    .editor-heading .link-btn { min-block-size: 24px; padding: 0; font-weight: 500; }
+    .editor-heading .link-btn:hover { background: none; text-decoration: underline; }
+    .role-fields { display: grid; gap: 14px 24px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); }
+    .role-field { display: grid; gap: 4px; align-content: start; min-inline-size: 0; }
+    .role-field__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0 12px; }
+    .role-field__head > label { font-size: .9rem; font-weight: 600; color: var(--heading); }
+    .audio-links { display: flex; flex-wrap: wrap; align-items: center; gap: 0 2px; margin-inline-end: -8px; }
+    .audio-links__label { font-size: .85rem; color: var(--muted); margin-inline-end: 2px; }
     .button-editors { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr)); margin-block-start: 12px; }
     .button-editors > * { margin-block-start: 0; }
     .role-visibility { margin: 14px 0 0; padding: 0; border: 0; min-inline-size: 0; }
@@ -42,8 +53,11 @@ type RoleAudioField = 'audio_url' | 'hint_audio_url';
     .role-choice.selected { border-color: var(--primary); color: var(--primary); background: var(--card); }
     .role-choice:focus-within { outline: 2px solid var(--focus); outline-offset: 2px; }
     .role-choice input { inline-size: 18px; block-size: 18px; accent-color: var(--primary); }
-    .role-icon { display: grid; place-items: center; flex: none; inline-size: 36px; block-size: 36px;
-      border-radius: 8px; background: var(--card); color: var(--primary); }
+    .role-icon { display: grid; place-items: center; flex: none; inline-size: 44px; block-size: 44px;
+      border-radius: 10px; background: var(--card); color: var(--primary); }
+    .role-icon--button { padding: 0; border: 1px solid transparent; cursor: pointer; }
+    .role-icon--button:hover { border-color: var(--primary); }
+    .role-icon--button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
     .role-choice .role-icon { inline-size: 32px; block-size: 32px; background: var(--bg); }
     .save-bar { position: sticky; inset-block-end: 0; z-index: 2; margin-block-start: 20px; padding-block: 12px;
       background: var(--bg); border-block-start: 1px solid var(--line); }
