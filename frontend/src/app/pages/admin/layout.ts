@@ -6,27 +6,23 @@ import { PictogramSemanticSearch } from '../../core/pictogram-semantic-search';
 @Component({
   imports: [RouterOutlet, RouterLink, RouterLinkActive],
   styles: `
-    .admin-navigation { display: flow-root; position: relative; }
-    .semantic-offer { inline-size: fit-content; max-inline-size: 100%; padding: 10px 14px; margin: 0 0 16px auto;
-      background: var(--white); border: 1px solid var(--line); border-radius: var(--radius); }
-    .semantic-offer--setup { inline-size: min(100%, 27rem); }
-    .semantic-caption { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; justify-content: space-between; margin-block-end: 4px; }
-    .semantic-caption h2 { margin: 0; font-size: .86rem; font-weight: 600; line-height: 1.3; }
-    .semantic-caption p { margin: 0; font-size: .8rem; line-height: 1.3; overflow-wrap: anywhere; }
-    .semantic-controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
-    .search-modes { display: flex; flex-wrap: wrap; gap: 3px; min-inline-size: 0; padding-inline: 2px; border-radius: 9px; background: var(--bg); }
-    .search-modes .btn { padding-inline: 9px; }
+    .admin-navigation { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+      gap: 10px 24px; margin: 18px 0 24px; }
+    .admin-navigation .admin-tabs { margin: 0; }
+    .semantic-offer { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; min-inline-size: 0; }
+    .semantic-offer h2 { margin: 0; font-size: .87rem; font-weight: 500; line-height: 1.3; color: var(--muted); letter-spacing: 0; }
+    .semantic-note { flex-basis: 100%; margin: 0; font-size: .8rem; line-height: 1.3; text-align: end; overflow-wrap: anywhere; }
+    .search-modes { display: flex; gap: 2px; padding: 3px; border: 1px solid var(--line); border-radius: 10px; background: var(--white); }
+    .search-modes .btn { min-height: 32px; padding: 4px 12px; border: 0; border-radius: 7px; font-size: .87rem; }
     .search-modes .btn[aria-pressed='true'] { color: white; background: var(--primary); }
-    .semantic-progress { display: flex; align-items: center; justify-content: flex-end; gap: 6px;
+    .semantic-download { min-height: 40px; }
+    .semantic-download small { font-weight: 500; opacity: .75; }
+    .semantic-progress { display: flex; align-items: center; gap: 6px;
       font-size: .85rem; font-variant-numeric: tabular-nums; }
-    .semantic-progress progress { inline-size: clamp(36px, 10vw, 90px); block-size: 12px; accent-color: var(--primary); }
-    @media (min-width: 80rem) {
-      .admin-navigation:has(.semantic-offer) .admin-tabs { padding-inline-end: 15rem; }
-      .admin-navigation:has(.semantic-offer--setup) .admin-tabs { padding-inline-end: 28rem; }
-      .semantic-offer { position: absolute; inset-block-start: -2px; inset-inline-end: 0; margin: 0; }
-    }
-    @media (max-width: 79.99rem) {
-      .admin-navigation:has(.semantic-offer) .admin-tabs { margin-block-end: 10px; }
+    .semantic-progress progress { inline-size: clamp(60px, 10vw, 110px); block-size: 10px; accent-color: var(--primary); }
+    @media (max-width: 40rem) {
+      .semantic-offer { inline-size: 100%; }
+      .semantic-note { text-align: start; }
     }
   `,
   template: `
@@ -50,44 +46,42 @@ import { PictogramSemanticSearch } from '../../core/pictogram-semantic-search';
         @if (semantic.checked()) {
           @let progress = semantic.progress();
           @let setup = !semantic.installed() || semantic.updateAvailable() || !!progress;
-          <aside class="semantic-offer" [class.semantic-offer--setup]="setup" aria-label="Поиск пиктограмм">
-            <div class="semantic-caption">
-              <h2 id="pictogram-search-type">Тип поиска пиктограмм</h2>
-              @if (setup) {
-                @if (semantic.message()) {
-                  <p role="alert">{{ semantic.message() }}</p>
-                } @else if (progress) {
-                  <p class="muted" role="status">{{ progress.checking ? 'Проверяем модель и индекс…' : 'Скачиваем модель и индекс…' }}</p>
-                } @else if (semantic.supported()) {
-                  <p class="muted">{{ semantic.updateAvailable()
-                    ? 'Доступно обновление' : 'Заметно упрощает поиск · 160 МБ' }}</p>
-                } @else {
-                  <p>Для скачивания нужен HTTPS или localhost.</p>
-                }
-              }
+          <aside class="semantic-offer" aria-labelledby="pictogram-search-type">
+            <h2 id="pictogram-search-type">Поиск пиктограмм</h2>
+            <div class="search-modes" role="group" aria-labelledby="pictogram-search-type">
+              <button type="button" class="btn btn--ghost btn--sm" [attr.aria-pressed]="semantic.mode() === 'exact'"
+                (click)="semantic.selectMode('exact')">Точный</button>
+              <button type="button" class="btn btn--ghost btn--sm" [attr.aria-pressed]="semantic.mode() === 'contextual'"
+                [disabled]="!semantic.installed()"
+                [attr.title]="semantic.installed() ? null : 'Сначала скачайте модель'"
+                (click)="semantic.selectMode('contextual')">Контекстный</button>
             </div>
-            <div class="semantic-controls">
-              <div class="search-modes" role="group" aria-labelledby="pictogram-search-type">
-                <button type="button" class="btn btn--ghost btn--sm" [attr.aria-pressed]="semantic.mode() === 'exact'"
-                  (click)="semantic.selectMode('exact')">Точный</button>
-                <button type="button" class="btn btn--ghost btn--sm" [attr.aria-pressed]="semantic.mode() === 'contextual'"
-                  [disabled]="!semantic.installed()" (click)="semantic.selectMode('contextual')">Контекстный</button>
+            @if (progress) {
+              <div class="semantic-progress">
+                <progress max="100" [attr.value]="progress.percent" aria-label="Загрузка поиска по смыслу"></progress>
+                @if (progress.percent !== null) { <span aria-hidden="true">{{ progress.percent }}%</span> }
               </div>
-              @if (progress) {
-                <div class="semantic-progress">
-                  <progress max="100" [attr.value]="progress.percent" aria-label="Загрузка поиска по смыслу"></progress>
-                  @if (progress.percent !== null) { <span aria-hidden="true">{{ progress.percent }}%</span> }
-                </div>
-              } @else if (setup && semantic.supported()) {
-                @if (semantic.latest()) {
-                  <button type="button" class="btn btn--secondary btn--sm" (click)="semantic.install()">
-                    {{ semantic.updateAvailable() ? 'Обновить модель' : 'Скачать модель' }}
-                  </button>
-                } @else {
-                  <button type="button" class="btn btn--secondary btn--sm" (click)="semantic.refresh()">Перепроверить</button>
-                }
+            } @else if (setup && semantic.supported()) {
+              @if (semantic.latest()) {
+                <button type="button" class="btn btn--secondary btn--sm semantic-download"
+                  title="Контекстный поиск находит пиктограммы по смыслу, а не только по названию"
+                  (click)="semantic.install()">
+                  {{ semantic.updateAvailable() ? 'Обновить модель' : 'Скачать модель' }}
+                  @if (!semantic.updateAvailable()) { <small>160 МБ</small> }
+                </button>
+              } @else {
+                <button type="button" class="btn btn--secondary btn--sm semantic-download" (click)="semantic.refresh()">Перепроверить</button>
               }
-            </div>
+            }
+            @if (setup) {
+              @if (semantic.message()) {
+                <p class="semantic-note" role="alert">{{ semantic.message() }}</p>
+              } @else if (progress) {
+                <p class="semantic-note muted" role="status">{{ progress.checking ? 'Проверяем модель и индекс…' : 'Скачиваем модель и индекс…' }}</p>
+              } @else if (!semantic.supported()) {
+                <p class="semantic-note">Для скачивания нужен HTTPS или localhost.</p>
+              }
+            }
           </aside>
         }
       </div>

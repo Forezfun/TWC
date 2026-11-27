@@ -16,21 +16,37 @@ type RoleAudioField = 'audio_url' | 'hint_audio_url';
   imports: [FormsModule, AudioPreview, MicrophoneDialog, RolePictogram, RolePictogramDialog],
   templateUrl: './site-display-settings.html',
   styles: [`
-    .display-settings { margin-block: 24px; }
-    .role-editor, .button-editor { border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; min-inline-size: 0; }
-    .display-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
-    .role-audio { margin-block: 8px 16px; }
-    .role-visibility { padding: 0; border: 0; min-inline-size: 0; }
-    .role-visibility legend { font-weight: 600; margin-block-end: 8px; }
-    .role-options { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); }
+    .display-settings { margin-block: 20px 28px; }
+    h3.section-title { margin-block-start: 32px; }
+    .role-editor + .role-editor { margin-block-start: 12px; }
+    .role-editor + .display-actions { margin-block-start: 12px; }
+    .role-editor, .button-editor { margin: 0; border: 1px solid var(--line); border-radius: var(--radius);
+      padding: 16px 18px; min-inline-size: 0; background: var(--white); }
+    .editor-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; }
+    .editor-head__actions { margin-inline-start: auto; }
+    .editor-title { font-size: 1.05rem; font-weight: 650; color: var(--heading); overflow-wrap: anywhere; }
+    .display-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+    .display-actions p { margin: 0; }
+    .role-fields { display: grid; gap: 16px 24px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); }
+    .role-field { display: grid; gap: 10px; align-content: start; min-inline-size: 0; }
+    .role-audio { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+    .role-audio__label { font-size: .87rem; font-weight: 500; color: var(--muted); }
+    .button-editors { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr)); margin-block-start: 12px; }
+    .button-editors > * { margin-block-start: 0; }
+    .role-visibility { margin: 14px 0 0; padding: 0; border: 0; min-inline-size: 0; }
+    .role-visibility legend { font-size: .9rem; font-weight: 600; margin-block-end: 8px; }
+    .role-options { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr)); }
     .role-choice { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center;
-      gap: 9px; padding: 8px 10px; min-height: 48px; border: 1px solid var(--line);
+      gap: 9px; padding: 6px 10px; min-height: 46px; border: 1px solid var(--line);
       border-radius: 10px; cursor: pointer; font-weight: 600; overflow-wrap: anywhere; }
     .role-choice.selected { border-color: var(--primary); color: var(--primary); background: var(--card); }
     .role-choice:focus-within { outline: 2px solid var(--focus); outline-offset: 2px; }
     .role-choice input { inline-size: 18px; block-size: 18px; accent-color: var(--primary); }
-    .role-icon { display: grid; place-items: center; inline-size: 32px; block-size: 32px;
-      border-radius: 8px; background: var(--bg); color: var(--primary); }
+    .role-icon { display: grid; place-items: center; flex: none; inline-size: 36px; block-size: 36px;
+      border-radius: 8px; background: var(--card); color: var(--primary); }
+    .role-choice .role-icon { inline-size: 32px; block-size: 32px; background: var(--bg); }
+    .save-bar { position: sticky; inset-block-end: 0; z-index: 2; margin-block-start: 20px; padding-block: 12px;
+      background: var(--bg); border-block-start: 1px solid var(--line); }
     .file-button { cursor: pointer; }
     .file-button:focus-within { outline: 2px solid var(--focus); outline-offset: 2px; }
   `],
@@ -57,7 +73,6 @@ export class SiteDisplaySettings {
   ] as const;
   protected readonly recordingTarget = signal<{ key: string; field: RoleAudioField } | null>(null);
   protected readonly message = signal('');
-  protected readonly messageArea = signal<'roles' | 'buttons'>('roles');
   protected readonly failed = signal(false);
   protected readonly canSave = computed(() => {
     const { roles, donate, volunteer } = this.draft();
@@ -84,13 +99,11 @@ export class SiteDisplaySettings {
       donate: { ...display.donate, role_keys: display.donate.role_keys.filter((role) => role !== key) },
       volunteer: { ...display.volunteer, role_keys: display.volunteer.role_keys.filter((role) => role !== key) },
     }));
-    this.messageArea.set('roles');
     this.notify(saved ? 'Сохраните изменения, чтобы удалить роль.' : '', true);
   }
 
   protected toggleVisibility(role: SiteRole): void {
     this.editRole(role.key, 'is_hidden', !role.is_hidden);
-    this.messageArea.set('roles');
     this.notify('Сохраните изменения, чтобы обновить видимость роли.', true);
   }
 
@@ -119,7 +132,6 @@ export class SiteDisplaySettings {
   }
 
   protected upload(key: string, field: RoleAudioField, input: HTMLInputElement): void {
-    this.messageArea.set('roles');
     const file = input.files?.[0];
     input.value = '';
     if (!file) return;
@@ -144,7 +156,6 @@ export class SiteDisplaySettings {
   }
 
   protected useRecording(url: string): void {
-    this.messageArea.set('roles');
     const target = this.recordingTarget();
     if (!target) return;
     this.editRole(target.key, target.field, url);

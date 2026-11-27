@@ -9,6 +9,13 @@ const fields = [
 
 @Component({
   imports: [SiteDisplaySettings],
+  styles: `
+    :host { display: block; max-inline-size: 1180px; }
+    .setting { display: grid; gap: 10px 24px; align-items: start;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); }
+    .setting p { margin: 2px 0 0; font-size: .9rem; }
+    .setting .btn { justify-self: start; }
+  `,
   template: `
     <h2>Настройки сайта</h2>
     @if (message()) {
@@ -23,7 +30,7 @@ const fields = [
     } @else {
       <div class="stack">
         @for (setting of settings(); track setting.key) {
-          <div class="card form-grid">
+          <div class="card setting">
             <div>
               <strong>{{ setting.label }}</strong>
               <p class="muted">{{ setting.hint }}</p>

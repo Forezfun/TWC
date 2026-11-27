@@ -1,14 +1,17 @@
 .pictogram-card-heading {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 12px;
 }
-.pictogram-card-heading p { flex: 1 1 280px; }
+.pictogram-card-heading p { flex: 1 1 280px; margin: 0; color: var(--muted); }
 .pictogram-card-heading .btn { margin-inline-start: auto; }
 
 .pictogram-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   border: 0;
   margin: 0;
   min-inline-size: 0;
@@ -44,7 +47,6 @@
   width: 18px; height: 18px; margin: 1px; accent-color: var(--primary);
 }
 
-.pictogram-fields > twc-pictogram-pages { margin-block-end: 16px; }
 
 .pictogram-tiles {
   display: grid;
@@ -73,5 +75,6 @@
 }
 
 .pictogram-option strong, .pictogram-option span { grid-column: 1 / -1; overflow-wrap: anywhere; }
-.pictogram-save { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
-.catalog-credit { margin-block-end: 14px; }
+.pictogram-fields > * { margin-block: 0; }
+.pictogram-save { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding-block-start: 16px; border-block-start: 1px solid var(--line); }
+.pictogram-save p { margin: 0; }
