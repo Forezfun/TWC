@@ -101,7 +101,7 @@ export class AdminInstructions {
   protected readonly draft = signal<InstructionInput | null>(null);
   protected readonly history = signal<{ undo: DraftSnapshot[]; redo: DraftSnapshot[] }>({ undo: [], redo: [] });
   private typing?: { field: string; at: number };
-  protected readonly pictogramLibrary = inject(PictogramApi).library(() => this.draft() !== null);
+  protected readonly pictogramLibrary = inject(PictogramApi).library(() => this.draft() !== null, () => 'selected');
   protected readonly selectedId = signal<number | undefined>(undefined);
   protected readonly stepId = signal<string | null>(null);
   protected readonly busy = signal(false);

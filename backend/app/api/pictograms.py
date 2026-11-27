@@ -20,6 +20,7 @@ from app.models import PictogramImage, PictogramSelection, PictogramSet
 router = APIRouter(tags=["pictograms"])
 admin = [Depends(current_admin)]
 catalog_path = Path(__file__).resolve().parents[3] / "shared" / "pictograms"
+ARASAAC_SET_ID = "arasaac-all"
 max_bundle_bytes = 16 * 1024 * 1024
 max_image_bytes = 512 * 1024
 
@@ -118,7 +119,16 @@ def title_key(title: str) -> str:
 
 
 @router.get("/admin/pictograms", dependencies=admin)
-async def library(request: Request, session: Session):
+async def library(
+    request: Request, session: Session,
+    scope: Literal["all", "light", "selected"] = "all",
+):
+    """Каталог пиктограмм.
+
+    `all` — всё, включая полный индекс ARASAAC (несколько мегабайт).
+    `light` — без пиктограмм ARASAAC, пока выбран другой набор; тогда `partial: true`.
+    `selected` — только отмеченные пиктограммы: их хватает редактору сценариев.
+    """
     sets, pictograms = built_in_catalog()
     rows = (await session.scalars(select(PictogramSet).order_by(PictogramSet.title))).all()
     saved = await session.get(PictogramSelection, 1)
@@ -126,10 +136,21 @@ async def library(request: Request, session: Session):
         {"set_id": saved.set_id, "pictogram_ids": saved.pictogram_ids}
         if saved else {"set_id": sets[0]["id"], "pictogram_ids": sets[0]["pictogram_ids"]}
     )
+    all_sets = [*sets, *(describe_set(row.id, row.title, row.pictograms) for row in rows)]
+    all_pictograms = [*pictograms, *(p for row in rows for p in row.pictograms)]
+    partial = False
+    if scope == "selected":
+        chosen = set(selection["pictogram_ids"])
+        all_sets, all_pictograms = [], [p for p in all_pictograms if p["id"] in chosen]
+    elif scope == "light" and selection["set_id"] != ARASAAC_SET_ID:
+        partial = True
+        all_sets = [
+            {**item, "pictogram_ids": []} if item["id"] == ARASAAC_SET_ID else item
+            for item in all_sets
+        ]
+        all_pictograms = [p for p in all_pictograms if not p["id"].startswith("arasaac-")]
     body = json.dumps({
-        "sets": [*sets, *(describe_set(row.id, row.title, row.pictograms) for row in rows)],
-        "pictograms": [*pictograms, *(p for row in rows for p in row.pictograms)],
-        "selection": selection,
+        "sets": all_sets, "pictograms": all_pictograms, "selection": selection, "partial": partial,
     }, ensure_ascii=False, separators=(",", ":")).encode()
     # Каталог весит несколько мегабайт и меняется редко: браузер перепроверяет
     # его по ETag и при совпадении получает пустой ответ 304.

@@ -56,7 +56,7 @@ export class RolePictogramDialog {
   protected readonly opened = signal(false);
   protected readonly selected = signal<string | null>(null);
   protected readonly query = signal('');
-  protected readonly library = inject(PictogramApi).library(this.opened);
+  protected readonly library = inject(PictogramApi).library(this.opened, () => 'selected');
   private readonly symbols = computed(() => {
     if (!this.library.hasValue()) return [];
     const { pictograms, selection } = this.library.value();
