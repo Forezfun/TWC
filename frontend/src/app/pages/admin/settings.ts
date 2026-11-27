@@ -10,7 +10,7 @@ const fields = [
 @Component({
   imports: [SiteDisplaySettings],
   styles: `
-    :host { display: block; max-inline-size: 1180px; }
+    :host { display: block; }
     .setting { display: grid; gap: 10px 24px; align-items: start;
       grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); }
     .setting p { margin: 2px 0 0; font-size: .9rem; }
