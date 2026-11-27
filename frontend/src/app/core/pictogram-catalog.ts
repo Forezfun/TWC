@@ -30,6 +30,8 @@ export interface PictogramLibrary {
   pictograms: readonly Pictogram[];
   sets: readonly PictogramSet[];
   selection: PictogramSelection;
+  /** Сервер не прислал пиктограммы ARASAAC: их подгружают при выборе этого набора. */
+  partial?: boolean;
 }
 
 export const ARASAAC_SET_ID = 'arasaac-all';

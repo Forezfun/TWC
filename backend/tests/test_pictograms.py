@@ -79,3 +79,30 @@ async def test_library_is_revalidated_by_etag(admin, bundle):
     changed = await admin.get(library_path, headers={"If-None-Match": etag})
     assert changed.status_code == 200
     assert changed.headers["etag"] != etag
+
+
+async def test_light_scope_skips_arasaac_until_it_is_selected(admin):
+    full = (await admin.get(library_path)).json()
+    light = (await admin.get(library_path, params={"scope": "light"})).json()
+    assert light["partial"] is True
+    assert not any(p["id"].startswith("arasaac-") for p in light["pictograms"])
+    assert [s["id"] for s in light["sets"]] == [s["id"] for s in full["sets"]]
+    arasaac = next(s for s in full["sets"] if s["id"] == "arasaac-all")
+    assert next(s for s in light["sets"] if s["id"] == "arasaac-all")["pictogram_ids"] == []
+
+    selection = {"set_id": "arasaac-all", "pictogram_ids": arasaac["pictogram_ids"][:2]}
+    assert (await admin.put(library_path, json=selection)).status_code == 200
+    light = (await admin.get(library_path, params={"scope": "light"})).json()
+    assert light["partial"] is False
+    assert len(light["pictograms"]) == len(full["pictograms"])
+
+
+async def test_selected_scope_returns_only_chosen_pictograms(admin):
+    full = (await admin.get(library_path)).json()
+    chosen = full["selection"]["pictogram_ids"][:3]
+    selection = {"set_id": full["selection"]["set_id"], "pictogram_ids": chosen}
+    assert (await admin.put(library_path, json=selection)).status_code == 200
+
+    selected = (await admin.get(library_path, params={"scope": "selected"})).json()
+    assert sorted(p["id"] for p in selected["pictograms"]) == sorted(chosen)
+    assert selected["selection"] == selection

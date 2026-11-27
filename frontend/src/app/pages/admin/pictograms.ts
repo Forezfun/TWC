@@ -1,4 +1,4 @@
-import { Component, computed, inject, linkedSignal, signal } from '@angular/core';
+import { Component, computed, effect, inject, linkedSignal, signal, untracked } from '@angular/core';
 import { errorText } from '../../core/admin-api';
 import { PictogramApi } from '../../core/pictogram-api';
 import { ARASAAC_SET_ID, PICTOGRAM_CATEGORIES, PictogramCategory, PictogramSelection } from '../../core/pictogram-catalog';
@@ -16,7 +16,10 @@ import { pictogramSearch } from './pictogram-search';
 })
 export class AdminPictograms {
   private readonly api = inject(PictogramApi);
-  protected readonly library = this.api.library(() => true);
+  /** Полный каталог ARASAAC весит несколько мегабайт: загружаем его, только когда набор выбрали. */
+  private readonly full = signal(false);
+  private readonly pendingSet = signal<string | null>(null);
+  protected readonly library = this.api.library(() => true, () => this.full() ? 'all' : 'light');
   protected readonly query = signal('');
   protected readonly categoryFilter = signal<ReadonlySet<PictogramCategory> | null>(null);
   protected readonly busy = signal(false);
@@ -62,11 +65,27 @@ export class AdminPictograms {
       || saved.pictogram_ids.some((id) => !ids.has(id));
   });
 
+  constructor() {
+    effect(() => {
+      const id = this.pendingSet();
+      if (!id || !this.library.hasValue() || this.library.value().partial) return;
+      untracked(() => {
+        this.pendingSet.set(null);
+        this.chooseSet(id);
+      });
+    });
+  }
+
   protected chooseSet(id: string): void {
     if (!this.library.hasValue()) return;
-    const { sets, selection } = this.library.value();
+    const { sets, selection, partial } = this.library.value();
     const set = sets.find((candidate) => candidate.id === id);
     if (!set) return;
+    if (partial && id === ARASAAC_SET_ID) {
+      this.pendingSet.set(id);
+      this.full.set(true);
+      return;
+    }
     this.changeSelection(id === selection.set_id ? selection : { set_id: id, pictogram_ids: set.pictogram_ids });
     this.query.set('');
     this.selectAllCategories();
