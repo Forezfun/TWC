@@ -11,46 +11,53 @@
         <fieldset class="role-editor stack" [disabled]="busy()">
           <legend class="visually-hidden">{{ role.title || 'Новая роль' }}</legend>
           <div class="editor-head">
-            <span class="role-icon"><twc-role-pictogram [roleKey]="role.key" [url]="role.icon_url ?? null" [size]="24" /></span>
-            <strong class="editor-title" aria-hidden="true">{{ role.title || 'Новая роль' }}</strong>
-            @if (role.is_hidden) { <span class="badge badge--off">Скрыта на сайте</span> }
-            <div class="display-actions editor-head__actions">
-              <button type="button" class="btn btn--secondary btn--sm"
+            <button type="button" class="role-icon role-icon--button" title="Изменить пиктограмму"
+              [attr.aria-label]="'Изменить пиктограмму роли ' + (role.title || 'Новая роль')"
+              (click)="pictogramRole.set(role.key); picker.open(role.icon_url)">
+              <twc-role-pictogram [roleKey]="role.key" [url]="role.icon_url ?? null" [size]="26" />
+            </button>
+            <div class="editor-heading">
+              <strong class="editor-title" aria-hidden="true">{{ role.title || 'Новая роль' }}</strong>
+              <button type="button" class="link-btn"
                 (click)="pictogramRole.set(role.key); picker.open(role.icon_url)">Изменить пиктограмму</button>
-              <button type="button" class="btn btn--secondary btn--sm" (click)="toggleVisibility(role)">
-                {{ role.is_hidden ? 'Показать на сайте' : 'Скрыть роль' }}
+            </div>
+            @if (role.is_hidden) { <span class="badge badge--off">Скрыта на сайте</span> }
+            <div class="editor-head__actions">
+              <button type="button" class="link-btn" (click)="toggleVisibility(role)">
+                {{ role.is_hidden ? 'Показать на сайте' : 'Скрыть' }}
               </button>
-              <button type="button" class="btn btn--danger btn--sm" (click)="removeRole(role)">Удалить роль</button>
+              <button type="button" class="link-btn link-btn--danger"
+                [attr.aria-label]="'Удалить роль ' + (role.title || 'Новая роль')" (click)="removeRole(role)">Удалить</button>
             </div>
           </div>
           <div class="role-fields">
           @for (field of roleFields; track field.text) {
             <div class="role-field">
-            <label class="field">{{ field.label }}
-              <input class="input" [attr.maxlength]="field.limit" [required]="field.text === 'title'"
-                [ngModel]="role[field.text]" [name]="field.text + '-' + i"
-                (ngModelChange)="editRole(role.key, field.text, $event)" />
-            </label>
-            <div class="role-audio">
-              <span class="role-audio__label">{{ field.audioLabel }}</span>
-              <div class="display-actions">
-                <label class="btn btn--secondary btn--sm file-button">
-                  <span>Загрузить аудио</span>
-                  <input class="visually-hidden" type="file" accept="audio/*,.m4a,.mp3,.webm"
-                    [attr.aria-label]="field.audioLabel"
-                    (change)="upload(role.key, field.audio, $event.target)" />
-                </label>
-                <button type="button" class="btn btn--secondary btn--sm"
-                  (click)="recordingTarget.set({ key: role.key, field: field.audio }); mic.open(field.audioLabel + ' · ' + (role.title || 'Новая роль'))">
-                  Записать с микрофона
-                </button>
-                @if (role[field.audio]; as recording) {
-                  <twc-audio-preview [src]="recording" [label]="'Прослушать · ' + field.audioLabel + ' · ' + role.title" />
-                  <button type="button" class="btn btn--ghost btn--sm"
-                    (click)="editRole(role.key, field.audio, null)">Убрать озвучку</button>
-                }
+              <div class="role-field__head">
+                <label [attr.for]="field.text + '-' + role.key">{{ field.label }}</label>
+                <div class="audio-links" role="group" [attr.aria-label]="field.audioLabel">
+                  <span class="audio-links__label" aria-hidden="true">Озвучка:</span>
+                  @if (role[field.audio]; as recording) {
+                    <twc-audio-preview [src]="recording" [label]="'Прослушать · ' + field.audioLabel + ' · ' + role.title" />
+                    <button type="button" class="link-btn link-btn--danger"
+                      (click)="editRole(role.key, field.audio, null)">Убрать</button>
+                  }
+                  <label class="link-btn file-button">
+                    <span>Загрузить</span>
+                    <input class="visually-hidden" type="file" accept="audio/*,.m4a,.mp3,.webm"
+                      [attr.aria-label]="field.audioLabel + ': загрузить аудио'"
+                      (change)="upload(role.key, field.audio, $event.target)" />
+                  </label>
+                  <button type="button" class="link-btn"
+                    [attr.aria-label]="field.audioLabel + ': записать с микрофона'"
+                    (click)="recordingTarget.set({ key: role.key, field: field.audio }); mic.open(field.audioLabel + ' · ' + (role.title || 'Новая роль'))">
+                    Записать
+                  </button>
+                </div>
               </div>
-            </div>
+              <input class="input" [id]="field.text + '-' + role.key" [attr.maxlength]="field.limit"
+                [required]="field.text === 'title'" [ngModel]="role[field.text]" [name]="field.text + '-' + i"
+                (ngModelChange)="editRole(role.key, field.text, $event)" />
             </div>
           }
           </div>
